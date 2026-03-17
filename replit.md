@@ -21,7 +21,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── api-server/         # Express API server
+│   └── primeopp/           # PrimeOpp e-commerce storefront (React + Vite)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
@@ -49,6 +50,23 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
 
 ## Packages
+
+### `artifacts/primeopp` (`@workspace/primeopp`)
+
+PrimeOpp e-commerce storefront. A clean black/white t-shirt store MVP.
+
+- **Framework**: React + Vite (frontend-only, no backend needed yet)
+- **Preview path**: `/` (root)
+- **Key files**:
+  - `src/App.tsx` — app root, routing setup
+  - `src/pages/home.tsx` — homepage with hero + product grid
+  - `src/components/Navbar.tsx` — top navbar with brand name and Shop link
+  - `src/components/ProductCard.tsx` — reusable product card with Buy Now button
+  - `src/data/products.ts` — local product data (t-shirts)
+  - `src/index.css` — global styles and CSS variables (black/white theme)
+- **Products**: 4 sample t-shirts with Unsplash images
+- **Buy Now**: shows `alert("Order received! We will contact you.")`
+- **Future**: Ready for Stripe + Printful integration
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 
