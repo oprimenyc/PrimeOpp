@@ -6,53 +6,42 @@ interface ProductCardProps {
 
 function ProductCard({ product }: ProductCardProps) {
   function handleBuyNow() {
-    alert("Added to your exclusive cart. We will contact you.");
+    alert("Order received! We will contact you.");
   }
 
   return (
-    <div className="group flex flex-col cursor-pointer">
-      
-      {/* Product Image Wrapper - Editorial Style */}
-      <div className="relative w-full aspect-[3/4] overflow-hidden bg-zinc-100 mb-6">
+    <div className="group flex flex-col bg-black border border-zinc-800 relative">
+      {/* Badge */}
+      <div className="absolute top-0 left-0 bg-red-600 text-white text-xs font-bold px-3 py-1 tracking-widest z-10 uppercase">
+        LIMITED
+      </div>
+
+      {/* Product Image */}
+      <div className="w-full aspect-[4/5] overflow-hidden bg-zinc-900">
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 grayscale group-hover:grayscale-0"
         />
-        
-        {/* Urgency/Status Badge */}
-        <div className="absolute top-4 left-4 z-10">
-          <span className="bg-white/90 backdrop-blur-sm text-black text-[10px] font-sans font-bold tracking-[0.2em] uppercase px-3 py-1.5 shadow-sm">
-            {product.id % 2 === 0 ? "Limited Stock" : "New Season"}
-          </span>
-        </div>
-
-        {/* Hover Overlay with Button */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-8">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleBuyNow();
-            }}
-            className="translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500 premium-button-gradient text-white px-8 py-3 text-xs font-sans font-bold tracking-[0.2em] uppercase w-3/4 text-center hover:scale-105"
-          >
-            Add to Bag
-          </button>
-        </div>
       </div>
 
       {/* Product Info */}
-      <div className="flex flex-col items-center text-center px-2">
-        <h2 className="text-base md:text-lg font-serif text-black mb-2 group-hover:text-gray-600 transition-colors">
+      <div className="p-4 flex flex-col gap-2 bg-black">
+        <h2 className="text-xl font-serif font-bold text-white uppercase line-clamp-1">
           {product.name}
         </h2>
-        <p className="text-sm font-sans text-gray-500 mb-3 line-clamp-1 font-light">
-          {product.description}
-        </p>
-        <span className="text-sm font-sans font-medium tracking-widest text-black">
+        <span className="text-lg font-sans font-bold text-red-600 tracking-wider">
           ${product.price.toFixed(2)}
         </span>
       </div>
+
+      {/* CTA Button */}
+      <button
+        onClick={handleBuyNow}
+        className="w-full bg-zinc-900 text-white font-bold font-sans tracking-widest py-4 uppercase transition-colors duration-0 hover:bg-red-600 hover:text-white"
+      >
+        ADD TO CART
+      </button>
     </div>
   );
 }
