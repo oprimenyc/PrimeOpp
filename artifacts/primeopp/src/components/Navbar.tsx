@@ -1,26 +1,55 @@
-// This is the Navbar component — it shows at the top of every page
-// It has the brand name on the left and a "Shop" link on the right
+import { useState, useEffect } from "react";
 
 function Navbar() {
-  return (
-    // The navbar bar — black background, white text
-    <nav className="bg-black text-white px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-lg">
-      
-      {/* Brand name on the left */}
-      <a href="/" className="text-2xl font-bold tracking-tight hover:opacity-80 transition-opacity">
-        PrimeOpp
-      </a>
+  const [scrolled, setScrolled] = useState(false);
 
-      {/* Navigation links on the right */}
-      <div className="flex items-center gap-6">
-        <a
-          href="#shop"
-          className="text-sm font-medium tracking-wide hover:opacity-70 transition-opacity uppercase"
-        >
-          Shop
-        </a>
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 40);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <div className="fixed w-full z-50 flex flex-col">
+      {/* Top Announcement Banner */}
+      <div className="bg-black text-white text-[10px] sm:text-xs font-sans tracking-[0.2em] text-center py-2.5 uppercase w-full">
+        Free Shipping On All Orders · Limited Edition Drop
       </div>
-    </nav>
+      
+      {/* Main Navbar */}
+      <nav 
+        className={`w-full transition-all duration-500 border-b border-white/10 ${
+          scrolled 
+            ? 'bg-black/80 backdrop-blur-md py-4 shadow-lg' 
+            : 'bg-black/40 backdrop-blur-sm py-6'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          <a href="/" className="text-white text-2xl sm:text-3xl font-serif tracking-widest uppercase hover:text-gray-300 transition-colors">
+            PrimeOpp
+          </a>
+
+          <div className="flex items-center gap-8">
+            <a
+              href="#shop"
+              className="text-white text-xs font-sans font-medium tracking-[0.15em] uppercase hover:text-gray-300 transition-colors relative group"
+            >
+              Collection
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all duration-300 group-hover:w-full"></span>
+            </a>
+            <a
+              href="#about"
+              className="text-white text-xs font-sans font-medium tracking-[0.15em] uppercase hover:text-gray-300 transition-colors relative group hidden sm:block"
+            >
+              Philosophy
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all duration-300 group-hover:w-full"></span>
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
   );
 }
 

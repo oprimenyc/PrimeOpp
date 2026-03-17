@@ -1,62 +1,57 @@
-// This is the ProductCard component
-// It shows one product: an image, name, price, and a "Buy Now" button
-// We use it for every product in our grid
-
 import { Product } from "@/data/products";
 
-// Define what data this component expects to receive
 interface ProductCardProps {
   product: Product;
 }
 
 function ProductCard({ product }: ProductCardProps) {
-  // This function runs when the user clicks "Buy Now"
   function handleBuyNow() {
-    alert("Order received! We will contact you.");
+    alert("Added to your exclusive cart. We will contact you.");
   }
 
   return (
-    // The card container — white background, rounded corners, subtle shadow
-    // On hover: the card lifts up (translate-y) and shadow gets bigger
-    <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col border border-gray-100">
+    <div className="group flex flex-col cursor-pointer">
       
-      {/* Product Image */}
-      <div className="overflow-hidden bg-gray-50">
+      {/* Product Image Wrapper - Editorial Style */}
+      <div className="relative w-full aspect-[3/4] overflow-hidden bg-zinc-100 mb-6">
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
         />
+        
+        {/* Urgency/Status Badge */}
+        <div className="absolute top-4 left-4 z-10">
+          <span className="bg-white/90 backdrop-blur-sm text-black text-[10px] font-sans font-bold tracking-[0.2em] uppercase px-3 py-1.5 shadow-sm">
+            {product.id % 2 === 0 ? "Limited Stock" : "New Season"}
+          </span>
+        </div>
+
+        {/* Hover Overlay with Button */}
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-8">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleBuyNow();
+            }}
+            className="translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500 premium-button-gradient text-white px-8 py-3 text-xs font-sans font-bold tracking-[0.2em] uppercase w-3/4 text-center hover:scale-105"
+          >
+            Add to Bag
+          </button>
+        </div>
       </div>
 
       {/* Product Info */}
-      <div className="p-5 flex flex-col flex-grow">
-        
-        {/* Product Name */}
-        <h2 className="text-lg font-bold text-gray-900 mb-1">
+      <div className="flex flex-col items-center text-center px-2">
+        <h2 className="text-base md:text-lg font-serif text-black mb-2 group-hover:text-gray-600 transition-colors">
           {product.name}
         </h2>
-
-        {/* Product Description */}
-        <p className="text-sm text-gray-500 mb-4 flex-grow">
+        <p className="text-sm font-sans text-gray-500 mb-3 line-clamp-1 font-light">
           {product.description}
         </p>
-
-        {/* Price and Buy Now Button */}
-        <div className="flex items-center justify-between mt-auto">
-          {/* Price */}
-          <span className="text-xl font-bold text-black">
-            ${product.price.toFixed(2)}
-          </span>
-
-          {/* Buy Now Button — black button, white text */}
-          <button
-            onClick={handleBuyNow}
-            className="bg-black text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-800 active:bg-gray-700 transition-colors duration-200"
-          >
-            Buy Now
-          </button>
-        </div>
+        <span className="text-sm font-sans font-medium tracking-widest text-black">
+          ${product.price.toFixed(2)}
+        </span>
       </div>
     </div>
   );
