@@ -1,13 +1,10 @@
-// Admin Panel — product manager with image upload
+// Admin Panel — product manager with image upload + image gallery
 // Visit /admin to manage your products.
-// You can upload images from your computer OR paste a URL.
 
 import { useState, useRef } from "react";
 import { getProducts, saveProducts, generateId, resetToDefaults, type Product } from "@/lib/productStore";
 
 const emptyForm = { name: "", price: "", image: "", description: "" };
-
-// Which image input mode the user has selected
 type ImageMode = "upload" | "url";
 
 function AdminPage() {
@@ -18,6 +15,8 @@ function AdminPage() {
   const [imageMode, setImageMode] = useState<ImageMode>("upload");
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  // Lightbox: stores the image src to display fullscreen, or null when closed
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function flash(msg: string) {
@@ -30,17 +29,14 @@ function AdminPage() {
     setProducts(updated);
   }
 
-  // Convert an image file to a base64 data URL so it can be stored without a server
   function readFileAsDataURL(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
-      // Only allow image files
       if (!file.type.startsWith("image/")) {
         reject(new Error("Please select an image file (JPG, PNG, WEBP, etc.)"));
         return;
       }
-      // Warn about large files (> 2MB can slow down the browser)
       if (file.size > 2 * 1024 * 1024) {
-        flash("⚠️ Large image detected. Try to use files under 2MB for best performance.");
+        flash("⚠️ Large image — try to keep files under 2MB for best performance.");
       }
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -49,13 +45,12 @@ function AdminPage() {
     });
   }
 
-  // Handle file selected via the file picker or drag-and-drop
   async function handleFileSelected(file: File) {
     setUploading(true);
     try {
       const dataUrl = await readFileAsDataURL(file);
       setForm((prev) => ({ ...prev, image: dataUrl }));
-      flash("✅ Image loaded! Ready to save.");
+      flash("✅ Image loaded!");
     } catch (err: unknown) {
       flash(`❌ ${err instanceof Error ? err.message : "Could not load image."}`);
     } finally {
@@ -86,7 +81,6 @@ function AdminPage() {
       flash("❌ Price must be a valid number greater than 0.");
       return;
     }
-
     if (editingId !== null) {
       persist(products.map((p) =>
         p.id === editingId
@@ -102,7 +96,7 @@ function AdminPage() {
         image: form.image,
         description: form.description.trim(),
       }]);
-      flash("✅ Product added to your store!");
+      flash("✅ Product added!");
     }
     setForm(emptyForm);
     setEditingId(null);
@@ -111,7 +105,6 @@ function AdminPage() {
   function startEdit(product: Product) {
     setForm({ name: product.name, price: String(product.price), image: product.image, description: product.description });
     setEditingId(product.id);
-    // If the saved image is a data URL (uploaded file), show it in upload mode
     setImageMode(product.image.startsWith("data:") ? "upload" : "url");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -122,7 +115,7 @@ function AdminPage() {
   }
 
   function deleteProduct(id: number) {
-    if (!confirm("Delete this product? This cannot be undone.")) return;
+    if (!confirm("Delete this product?")) return;
     persist(products.filter((p) => p.id !== id));
     flash("🗑️ Product deleted.");
     if (editingId === id) cancelEdit();
@@ -139,6 +132,32 @@ function AdminPage() {
   return (
     <div className="min-h-screen bg-black text-white font-sans uppercase">
 
+      {/* ===== FULLSCREEN LIGHTBOX ===== */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setLightbox(null)}
+        >
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 text-white text-2xl font-black bg-red-600 w-10 h-10 flex items-center justify-center hover:bg-white hover:text-black transition-colors z-10"
+            onClick={() => setLightbox(null)}
+          >
+            ✕
+          </button>
+          {/* Full image — click outside to close */}
+          <img
+            src={lightbox}
+            alt="Full size preview"
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-zinc-500 text-xs tracking-widest">
+            CLICK ANYWHERE TO CLOSE
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-black border-b-4 border-red-600 px-6 py-6 flex items-center justify-between sticky top-0 z-10">
         <div>
@@ -150,7 +169,7 @@ function AdminPage() {
         </a>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-12 space-y-14">
+      <div className="max-w-5xl mx-auto px-6 py-12 space-y-14">
 
         {/* Status message */}
         {message && (
@@ -166,8 +185,7 @@ function AdminPage() {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-
-            {/* Product Name */}
+            {/* Name */}
             <div>
               <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">PRODUCT NAME *</label>
               <input
@@ -196,11 +214,11 @@ function AdminPage() {
               </div>
             </div>
 
-            {/* ===== IMAGE SECTION — toggle between Upload and URL ===== */}
+            {/* Image */}
             <div>
               <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-3">PRODUCT IMAGE *</label>
 
-              {/* Toggle tabs */}
+              {/* Mode tabs */}
               <div className="flex border border-zinc-700 mb-4 w-fit">
                 <button
                   type="button"
@@ -218,34 +236,23 @@ function AdminPage() {
                 </button>
               </div>
 
-              {/* UPLOAD MODE — drag and drop or click to browse */}
+              {/* Upload mode */}
               {imageMode === "upload" && (
                 <div>
-                  {/* Hidden real file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileInputChange}
-                  />
-
-                  {/* If no image yet — show the drop zone */}
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileInputChange} />
                   {!form.image ? (
                     <div
                       onClick={() => fileInputRef.current?.click()}
                       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                       onDragLeave={() => setDragOver(false)}
                       onDrop={handleDrop}
-                      className={`border-2 border-dashed cursor-pointer flex flex-col items-center justify-center py-12 px-6 text-center transition-colors ${
-                        dragOver ? "border-red-600 bg-zinc-900" : "border-zinc-700 hover:border-zinc-500 bg-zinc-950"
-                      }`}
+                      className={`border-2 border-dashed cursor-pointer flex flex-col items-center justify-center py-16 px-6 text-center transition-colors ${dragOver ? "border-red-600 bg-zinc-900" : "border-zinc-700 hover:border-zinc-500 bg-zinc-950"}`}
                     >
                       {uploading ? (
-                        <p className="text-zinc-400 text-sm tracking-widest">LOADING IMAGE...</p>
+                        <p className="text-zinc-400 text-sm tracking-widest animate-pulse">LOADING IMAGE...</p>
                       ) : (
                         <>
-                          <div className="text-4xl mb-4">📸</div>
+                          <div className="text-5xl mb-4">📸</div>
                           <p className="text-white font-black text-sm tracking-widest mb-1">DROP IMAGE HERE</p>
                           <p className="text-zinc-500 text-xs tracking-widest normal-case">or click to browse your files</p>
                           <p className="text-zinc-700 text-[10px] mt-3 normal-case">JPG, PNG, WEBP — under 2MB recommended</p>
@@ -253,49 +260,85 @@ function AdminPage() {
                       )}
                     </div>
                   ) : (
-                    /* Image preview + change button */
-                    <div className="relative border border-zinc-700">
-                      <img src={form.image} alt="preview" className="w-full h-48 object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => { setForm((f) => ({ ...f, image: "" })); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                        className="absolute top-2 right-2 bg-black border border-zinc-600 text-white text-xs font-bold px-3 py-1 hover:border-red-600 hover:text-red-600 transition-colors"
-                      >
-                        ✕ CHANGE
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="absolute bottom-2 right-2 bg-red-600 text-white text-xs font-bold px-3 py-1 hover:bg-white hover:text-black transition-colors"
-                      >
-                        REPLACE
-                      </button>
+                    <div className="space-y-2">
+                      {/* Large preview */}
+                      <div className="relative group">
+                        <img
+                          src={form.image}
+                          alt="preview"
+                          className="w-full h-72 object-contain bg-zinc-950 border border-zinc-700 cursor-zoom-in"
+                          onClick={() => setLightbox(form.image)}
+                        />
+                        {/* Zoom hint */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <span className="bg-black/80 text-white text-xs font-bold tracking-widest px-4 py-2">🔍 CLICK TO ZOOM</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setLightbox(form.image)}
+                          className="flex-1 bg-zinc-900 border border-zinc-700 text-zinc-400 text-xs font-bold py-2 tracking-widest hover:border-white hover:text-white transition-colors"
+                        >
+                          🔍 VIEW FULLSCREEN
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setForm((f) => ({ ...f, image: "" })); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                          className="flex-1 bg-zinc-900 border border-zinc-700 text-zinc-400 text-xs font-bold py-2 tracking-widest hover:border-red-600 hover:text-red-600 transition-colors"
+                        >
+                          ✕ REMOVE
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex-1 bg-red-600 text-white text-xs font-bold py-2 tracking-widest hover:bg-white hover:text-black transition-colors"
+                        >
+                          REPLACE
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* URL MODE — paste a link */}
+              {/* URL mode */}
               {imageMode === "url" && (
-                <div>
+                <div className="space-y-3">
                   <input
                     type="text"
-                    placeholder="https://images.unsplash.com/... or your Printful mockup URL"
+                    placeholder="https://... or your Printful/Printify mockup URL"
                     value={form.image}
                     onChange={(e) => setForm({ ...form, image: e.target.value })}
                     className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-xs normal-case"
                   />
-                  <p className="text-zinc-600 text-[10px] tracking-widest mt-2 normal-case">
-                    Tip: For Printful/Printify — copy the mockup image URL from your product dashboard. For free photos, use unsplash.com.
+                  <p className="text-zinc-600 text-[10px] tracking-widest normal-case">
+                    Tip: Right-click any Printful/Printify mockup → "Copy image address". Or use unsplash.com for free photos.
                   </p>
                   {form.image && (
-                    <img
-                      src={form.image}
-                      alt="preview"
-                      className="mt-3 h-32 w-32 object-cover border border-zinc-700"
-                      onError={(e) => (e.currentTarget.style.display = "none")}
-                      onLoad={(e) => (e.currentTarget.style.display = "block")}
-                    />
+                    <div className="space-y-2">
+                      {/* Large preview for URL too */}
+                      <div className="relative group">
+                        <img
+                          src={form.image}
+                          alt="preview"
+                          className="w-full h-72 object-contain bg-zinc-950 border border-zinc-700 cursor-zoom-in"
+                          onClick={() => setLightbox(form.image)}
+                          onError={(e) => (e.currentTarget.style.display = "none")}
+                          onLoad={(e) => (e.currentTarget.style.display = "block")}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <span className="bg-black/80 text-white text-xs font-bold tracking-widest px-4 py-2">🔍 CLICK TO ZOOM</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLightbox(form.image)}
+                        className="w-full bg-zinc-900 border border-zinc-700 text-zinc-400 text-xs font-bold py-2 tracking-widest hover:border-white hover:text-white transition-colors"
+                      >
+                        🔍 VIEW FULLSCREEN
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -313,20 +356,13 @@ function AdminPage() {
               />
             </div>
 
-            {/* Submit buttons */}
+            {/* Submit */}
             <div className="flex gap-4 pt-2">
-              <button
-                type="submit"
-                className="bg-red-600 text-white font-black text-xs px-8 py-4 tracking-[0.2em] hover:bg-white hover:text-black transition-colors"
-              >
+              <button type="submit" className="bg-red-600 text-white font-black text-xs px-8 py-4 tracking-[0.2em] hover:bg-white hover:text-black transition-colors">
                 {editingId !== null ? "SAVE CHANGES" : "ADD PRODUCT"}
               </button>
               {editingId !== null && (
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="border border-zinc-600 text-zinc-400 font-bold text-xs px-6 py-4 tracking-widest hover:border-white hover:text-white transition-colors"
-                >
+                <button type="button" onClick={cancelEdit} className="border border-zinc-600 text-zinc-400 font-bold text-xs px-6 py-4 tracking-widest hover:border-white hover:text-white transition-colors">
                   CANCEL
                 </button>
               )}
@@ -334,63 +370,85 @@ function AdminPage() {
           </form>
         </section>
 
-        {/* ===== POD GUIDE ===== */}
+        {/* POD Guide */}
         <section className="border border-zinc-800 p-6">
-          <h3 className="font-black tracking-widest text-lg mb-4 text-red-600">📦 HOW TO ADD PRINTFUL / PRINTIFY PRODUCTS</h3>
-          <ol className="space-y-3 text-sm normal-case text-zinc-300 list-none">
-            <li className="flex gap-3"><span className="text-red-600 font-black flex-shrink-0">1.</span> Create your product in Printful or Printify and generate a mockup image.</li>
-            <li className="flex gap-3"><span className="text-red-600 font-black flex-shrink-0">2.</span> <strong className="text-white">Option A — Upload:</strong> Download the mockup image to your computer, then use the "Upload File" tab above to drag it in.</li>
-            <li className="flex gap-3"><span className="text-red-600 font-black flex-shrink-0">3.</span> <strong className="text-white">Option B — URL:</strong> Right-click the mockup image in Printful/Printify → "Copy image address" → paste it in the "Paste URL" tab.</li>
-            <li className="flex gap-3"><span className="text-red-600 font-black flex-shrink-0">4.</span> Set the price to match what Printful charges you + your profit margin (e.g. Printful charges $12 → you sell for $29.99).</li>
-            <li className="flex gap-3"><span className="text-red-600 font-black flex-shrink-0">5.</span> When you're ready to take real orders and payments, we can add Stripe + Printful integration.</li>
+          <h3 className="font-black tracking-widest text-base mb-4 text-red-600">📦 HOW TO ADD PRINTFUL / PRINTIFY PRODUCTS</h3>
+          <ol className="space-y-2 text-xs normal-case text-zinc-400 list-none">
+            <li className="flex gap-3"><span className="text-red-600 font-black">1.</span> Design your product in Printful or Printify and generate a mockup.</li>
+            <li className="flex gap-3"><span className="text-red-600 font-black">2.</span> <strong className="text-white">Upload:</strong> Download the mockup → drag it into the upload box above.</li>
+            <li className="flex gap-3"><span className="text-red-600 font-black">3.</span> <strong className="text-white">Or URL:</strong> Right-click the mockup → "Copy image address" → paste in URL tab.</li>
+            <li className="flex gap-3"><span className="text-red-600 font-black">4.</span> Set your price = Printful cost + your profit margin.</li>
           </ol>
         </section>
 
-        {/* ===== CURRENT PRODUCTS LIST ===== */}
+        {/* ===== PRODUCT GALLERY ===== */}
         <section>
-          <div className="flex items-center justify-between border-b-2 border-white pb-4 mb-6">
+          <div className="flex items-center justify-between border-b-2 border-white pb-4 mb-8">
             <h2 className="text-2xl font-black tracking-widest">YOUR PRODUCTS ({products.length})</h2>
             <button onClick={handleReset} className="text-[10px] font-bold tracking-widest text-zinc-600 hover:text-red-600 transition-colors">
-              RESET TO DEFAULTS
+              RESET DEFAULTS
             </button>
           </div>
 
           {products.length === 0 && (
-            <p className="text-zinc-600 text-sm tracking-widest">No products yet. Add one above!</p>
+            <p className="text-zinc-600 text-sm tracking-widest text-center py-16">No products yet. Add one above!</p>
           )}
 
-          <div className="space-y-3">
+          {/* Image card grid — big images, easy to see */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {products.map((product) => (
               <div
                 key={product.id}
-                className={`flex items-center gap-4 bg-zinc-900 border p-4 transition-colors ${
+                className={`bg-zinc-950 border transition-colors flex flex-col ${
                   editingId === product.id ? "border-red-600" : "border-zinc-800 hover:border-zinc-600"
                 }`}
               >
-                <img src={product.image} alt={product.name} className="w-16 h-16 object-cover flex-shrink-0 bg-zinc-800" />
-                <div className="flex-grow min-w-0">
-                  <p className="font-black text-white tracking-widest truncate">{product.name}</p>
-                  <p className="text-red-600 font-bold text-sm tracking-widest">${product.price.toFixed(2)}</p>
-                  {product.description && (
-                    <p className="text-zinc-500 text-xs normal-case mt-0.5 truncate">{product.description}</p>
-                  )}
+                {/* Clickable image — opens fullscreen */}
+                <div
+                  className="relative group cursor-zoom-in overflow-hidden"
+                  onClick={() => setLightbox(product.image)}
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {/* Zoom overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                    <span className="text-white text-xs font-black tracking-widest opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-3 py-1">
+                      🔍 ZOOM
+                    </span>
+                  </div>
+                  {/* Upload badge */}
                   {product.image.startsWith("data:") && (
-                    <p className="text-zinc-600 text-[10px] tracking-widest mt-0.5">📁 Uploaded image</p>
+                    <span className="absolute top-2 left-2 bg-black text-zinc-400 text-[9px] font-bold tracking-widest px-2 py-0.5">
+                      📁 LOCAL
+                    </span>
                   )}
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => startEdit(product)}
-                    className="text-xs font-bold tracking-widest border border-zinc-600 px-3 py-2 hover:border-white hover:text-white transition-colors text-zinc-400"
-                  >
-                    EDIT
-                  </button>
-                  <button
-                    onClick={() => deleteProduct(product.id)}
-                    className="text-xs font-bold tracking-widest border border-zinc-800 px-3 py-2 hover:border-red-600 hover:text-red-600 transition-colors text-zinc-600"
-                  >
-                    DEL
-                  </button>
+
+                {/* Product info */}
+                <div className="p-3 flex flex-col flex-grow">
+                  <p className="font-black text-white tracking-wide text-xs truncate">{product.name}</p>
+                  <p className="text-red-600 font-black text-lg tracking-widest mt-0.5">${product.price.toFixed(2)}</p>
+                  {product.description && (
+                    <p className="text-zinc-500 text-[10px] normal-case mt-1 line-clamp-2">{product.description}</p>
+                  )}
+                  {/* Actions */}
+                  <div className="flex gap-2 mt-auto pt-3">
+                    <button
+                      onClick={() => startEdit(product)}
+                      className="flex-1 text-[10px] font-black tracking-widest border border-zinc-700 py-2 hover:border-white hover:text-white transition-colors text-zinc-400"
+                    >
+                      EDIT
+                    </button>
+                    <button
+                      onClick={() => deleteProduct(product.id)}
+                      className="text-[10px] font-black tracking-widest border border-zinc-800 px-3 py-2 hover:border-red-600 hover:text-red-600 transition-colors text-zinc-600"
+                    >
+                      DEL
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -398,7 +456,7 @@ function AdminPage() {
         </section>
 
         <p className="text-zinc-700 text-[10px] tracking-widest text-center pb-8 normal-case">
-          Products & uploaded images are saved in your browser. Add Stripe + a database when you're ready for real orders.
+          Products & images saved in your browser. Add Stripe + a database when ready for real orders.
         </p>
       </div>
     </div>
