@@ -53,20 +53,25 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ### `artifacts/primeopp` (`@workspace/primeopp`)
 
-PrimeOpp e-commerce storefront. A clean black/white t-shirt store MVP.
+PrimeOpp e-commerce + affiliate marketing storefront. Edgy black/red streetwear aesthetic.
 
-- **Framework**: React + Vite (frontend-only, no backend needed yet)
+- **Framework**: React + Vite
 - **Preview path**: `/` (root)
+- **Backend**: Uses `artifacts/api-server` at `/api`
+- **Database**: PostgreSQL `products` table
 - **Key files**:
-  - `src/App.tsx` — app root, routing setup
-  - `src/pages/home.tsx` — homepage with hero + product grid
-  - `src/components/Navbar.tsx` — top navbar with brand name and Shop link
-  - `src/components/ProductCard.tsx` — reusable product card with Buy Now button
-  - `src/data/products.ts` — local product data (t-shirts)
-  - `src/index.css` — global styles and CSS variables (black/white theme)
-- **Products**: 4 sample t-shirts with Unsplash images
-- **Buy Now**: shows `alert("Order received! We will contact you.")`
-- **Future**: Ready for Stripe + Printful integration
+  - `src/App.tsx` — routing: `/`, `/product/:id`, `/admin/login`, `/admin`
+  - `src/lib/api.ts` — all fetch calls to the API (products CRUD, auth)
+  - `src/pages/home.tsx` — hero carousel + POD grid + affiliate grid
+  - `src/pages/product.tsx` — POD product detail page with color picker
+  - `src/pages/admin-login.tsx` — secure login page (admin / primeopp2025)
+  - `src/pages/admin.tsx` — full admin panel (dashboard, add/edit/delete, image upload)
+  - `src/components/ProductCard.tsx` — card with color swatches; POD→detail, Affiliate→new tab
+  - `src/components/Navbar.tsx` — top navbar
+  - `src/index.css` — global styles (black/red theme)
+- **Auth**: JWT stored in localStorage; admin: `admin` / `primeopp2025`
+- **Product types**: `pod` (print-on-demand) and `affiliate`
+- **Color variants**: per-product color options with individual pricing
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 

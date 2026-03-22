@@ -5,19 +5,23 @@ import NotFound from "@/pages/not-found";
 import Navbar from "@/components/Navbar";
 import HomePage from "@/pages/home";
 import AdminPage from "@/pages/admin";
+import AdminLogin from "@/pages/admin-login";
+import ProductPage from "@/pages/product";
 
 const queryClient = new QueryClient();
 
 function Router() {
   const [location] = useLocation();
-  const isAdmin = location === "/admin";
+  // Hide the store navbar on admin pages and product detail page
+  const hideNav = location.startsWith("/admin") || location.startsWith("/product");
 
   return (
     <>
-      {/* Only show the store navbar on non-admin pages */}
-      {!isAdmin && <Navbar />}
+      {!hideNav && <Navbar />}
       <Switch>
         <Route path="/" component={HomePage} />
+        <Route path="/product/:id" component={ProductPage} />
+        <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin" component={AdminPage} />
         <Route component={NotFound} />
       </Switch>
