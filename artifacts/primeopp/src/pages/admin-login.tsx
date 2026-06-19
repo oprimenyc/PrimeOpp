@@ -1,6 +1,5 @@
 // Admin Login page — /admin/login
-// Simple username + password form to access the admin panel.
-// Credentials: admin / primeopp2025
+// Credentials are set via ADMIN_USERNAME and ADMIN_PASSWORD environment variables.
 
 import { useState } from "react";
 import { useLocation } from "wouter";
