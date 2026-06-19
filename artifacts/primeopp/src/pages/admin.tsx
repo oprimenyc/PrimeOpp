@@ -22,6 +22,8 @@ const emptyForm = {
   shipping_info: "",
   pod_provider: "printful" as "printful" | "tapstitch",
   sizes: "S, M, L, XL, XXL",
+  printful_variant_id: "",
+  tapstitch_variant_id: "",
 };
 
 type ImageMode = "upload" | "url";
@@ -137,6 +139,8 @@ function AdminPage() {
         colors: colors.length > 0 ? colors.map((c) => ({ ...c, price: Number(c.price) })) : [],
         sizes: sizesArray,
         pod_provider: form.type === "pod" ? form.pod_provider : null,
+        printful_variant_id: form.type === "pod" && form.pod_provider === "printful" ? (form.printful_variant_id.trim() || null) : null,
+        tapstitch_variant_id: form.type === "pod" && form.pod_provider === "tapstitch" ? (form.tapstitch_variant_id.trim() || null) : null,
       };
 
       if (editingId !== null) {
@@ -168,6 +172,8 @@ function AdminPage() {
       shipping_info: p.shipping_info ?? "",
       pod_provider: (p.pod_provider as "printful" | "tapstitch") ?? "printful",
       sizes: Array.isArray(p.sizes) && p.sizes.length > 0 ? p.sizes.join(", ") : "S, M, L, XL, XXL",
+      printful_variant_id: p.printful_variant_id ?? "",
+      tapstitch_variant_id: p.tapstitch_variant_id ?? "",
     });
     setColors(Array.isArray(p.colors) ? [...p.colors] : []);
     setEditingId(p.id);
@@ -362,6 +368,35 @@ function AdminPage() {
                     {form.pod_provider === "printful"
                       ? "Orders will be auto-submitted to Printful for printing and shipping."
                       : "Orders will be auto-submitted to Tapstitch for production and fulfillment."}
+                  </p>
+                </div>
+
+                {/* Variant ID */}
+                <div>
+                  <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">
+                    {form.pod_provider === "printful" ? "PRINTFUL SYNC VARIANT ID" : "TAPSTITCH VARIANT ID"}
+                  </label>
+                  {form.pod_provider === "printful" ? (
+                    <input
+                      type="text"
+                      placeholder="e.g. 123456789"
+                      value={form.printful_variant_id}
+                      onChange={(e) => setForm({ ...form, printful_variant_id: e.target.value })}
+                      className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm normal-case font-mono"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="e.g. ts_variant_abc123"
+                      value={form.tapstitch_variant_id}
+                      onChange={(e) => setForm({ ...form, tapstitch_variant_id: e.target.value })}
+                      className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm normal-case font-mono"
+                    />
+                  )}
+                  <p className="text-zinc-600 text-[10px] normal-case mt-1 tracking-widest">
+                    {form.pod_provider === "printful"
+                      ? "Find this in Printful → Stores → your product → Sync Variants. Required for auto-fulfillment."
+                      : "Find this in your Tapstitch product dashboard. Required for auto-fulfillment."}
                   </p>
                 </div>
               </>

@@ -111,7 +111,7 @@ function ProductCard({ product }: Props) {
           ? "SHOP NOW ↗"
           : colors.length > 0 && selectedColorIndex === null
             ? "SELECT COLOR →"
-            : "ADD TO CART"}
+            : "VIEW DETAILS →"}
       </button>
     </div>
   );

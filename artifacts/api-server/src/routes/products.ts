@@ -1,6 +1,4 @@
 // products routes — full CRUD for products
-// Public: GET (list + single)
-// Admin-only: POST, PUT, DELETE
 
 import { Router } from "express";
 import { query } from "../lib/db.js";
@@ -8,12 +6,9 @@ import { requireAdmin } from "../lib/auth.js";
 
 const router = Router();
 
-// GET /api/products — list all products (newest first)
 router.get("/products", async (_req, res) => {
   try {
-    const products = await query(
-      "SELECT * FROM products ORDER BY created_at DESC"
-    );
+    const products = await query("SELECT * FROM products ORDER BY created_at DESC");
     res.json(products);
   } catch (err) {
     console.error("GET /products error:", err);
@@ -21,17 +16,10 @@ router.get("/products", async (_req, res) => {
   }
 });
 
-// GET /api/products/:id — get a single product
 router.get("/products/:id", async (req, res) => {
   try {
-    const rows = await query(
-      "SELECT * FROM products WHERE id = $1",
-      [req.params.id]
-    );
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Product not found" });
-      return;
-    }
+    const rows = await query("SELECT * FROM products WHERE id = $1", [req.params.id]);
+    if (rows.length === 0) { res.status(404).json({ error: "Product not found" }); return; }
     res.json(rows[0]);
   } catch (err) {
     console.error("GET /products/:id error:", err);
@@ -39,25 +27,22 @@ router.get("/products/:id", async (req, res) => {
   }
 });
 
-// POST /api/products — create a new product (admin only)
 router.post("/products", requireAdmin, async (req, res) => {
   try {
     const {
       type, title, description, price, category,
       thumbnail_url, external_link, stock_level, shipping_info,
-      colors, sizes, pod_provider,
+      colors, sizes, pod_provider, printful_variant_id, tapstitch_variant_id,
     } = req.body as Record<string, unknown>;
 
-    if (!type || !title) {
-      res.status(400).json({ error: "type and title are required" });
-      return;
-    }
+    if (!type || !title) { res.status(400).json({ error: "type and title are required" }); return; }
 
     const rows = await query(
       `INSERT INTO products
         (type, title, description, price, category, thumbnail_url, external_link,
-         stock_level, shipping_info, colors, sizes, pod_provider)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         stock_level, shipping_info, colors, sizes, pod_provider,
+         printful_variant_id, tapstitch_variant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
        RETURNING *`,
       [
         type, title, description ?? null, price ?? null, category ?? null,
@@ -66,6 +51,8 @@ router.post("/products", requireAdmin, async (req, res) => {
         JSON.stringify(colors ?? []),
         JSON.stringify(sizes ?? []),
         pod_provider ?? "printful",
+        printful_variant_id ?? null,
+        tapstitch_variant_id ?? null,
       ]
     );
     res.status(201).json(rows[0]);
@@ -75,22 +62,21 @@ router.post("/products", requireAdmin, async (req, res) => {
   }
 });
 
-// PUT /api/products/:id — update a product (admin only)
 router.put("/products/:id", requireAdmin, async (req, res) => {
   try {
     const {
       type, title, description, price, category,
       thumbnail_url, external_link, stock_level, shipping_info,
-      colors, sizes, pod_provider,
+      colors, sizes, pod_provider, printful_variant_id, tapstitch_variant_id,
     } = req.body as Record<string, unknown>;
 
     const rows = await query(
       `UPDATE products SET
         type=$1, title=$2, description=$3, price=$4, category=$5,
         thumbnail_url=$6, external_link=$7, stock_level=$8,
-        shipping_info=$9, colors=$10, sizes=$11, pod_provider=$12
-       WHERE id=$13
-       RETURNING *`,
+        shipping_info=$9, colors=$10, sizes=$11, pod_provider=$12,
+        printful_variant_id=$13, tapstitch_variant_id=$14
+       WHERE id=$15 RETURNING *`,
       [
         type, title, description ?? null, price ?? null, category ?? null,
         thumbnail_url ?? null, external_link ?? null,
@@ -98,14 +84,13 @@ router.put("/products/:id", requireAdmin, async (req, res) => {
         JSON.stringify(colors ?? []),
         JSON.stringify(sizes ?? []),
         pod_provider ?? "printful",
+        printful_variant_id ?? null,
+        tapstitch_variant_id ?? null,
         req.params.id,
       ]
     );
 
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Product not found" });
-      return;
-    }
+    if (rows.length === 0) { res.status(404).json({ error: "Product not found" }); return; }
     res.json(rows[0]);
   } catch (err) {
     console.error("PUT /products/:id error:", err);
@@ -113,17 +98,10 @@ router.put("/products/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/products/:id — delete a product (admin only)
 router.delete("/products/:id", requireAdmin, async (req, res) => {
   try {
-    const rows = await query(
-      "DELETE FROM products WHERE id=$1 RETURNING id",
-      [req.params.id]
-    );
-    if (rows.length === 0) {
-      res.status(404).json({ error: "Product not found" });
-      return;
-    }
+    const rows = await query("DELETE FROM products WHERE id=$1 RETURNING id", [req.params.id]);
+    if (rows.length === 0) { res.status(404).json({ error: "Product not found" }); return; }
     res.json({ deleted: true });
   } catch (err) {
     console.error("DELETE /products/:id error:", err);

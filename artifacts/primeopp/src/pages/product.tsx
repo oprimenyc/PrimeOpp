@@ -86,6 +86,8 @@ function ProductPage() {
       size: selectedSize,
       color: chosenColor?.name ?? "",
       pod_provider: product.pod_provider ?? "printful",
+      printful_variant_id: product.printful_variant_id ?? null,
+      tapstitch_variant_id: product.tapstitch_variant_id ?? null,
     };
 
     addToCart(item);

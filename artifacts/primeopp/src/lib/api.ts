@@ -14,6 +14,8 @@ export interface Product {
   colors: ColorVariant[];
   sizes: string[];
   pod_provider: "printful" | "tapstitch";
+  printful_variant_id: string | null;
+  tapstitch_variant_id: string | null;
   created_at: string;
 }
 
@@ -176,6 +178,8 @@ export async function createCheckoutSession(
     color: i.color,
     price: i.price,
     pod_provider: i.pod_provider,
+    printful_variant_id: i.printful_variant_id ?? null,
+    tapstitch_variant_id: i.tapstitch_variant_id ?? null,
   }));
 
   const res = await fetch("/api/checkout/session", {
