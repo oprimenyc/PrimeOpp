@@ -34,6 +34,24 @@ router.post("/checkout/session", async (req, res) => {
     return;
   }
 
+  // ── Cart sanity checks ────────────────────────────────────────────────────
+  if (items.length > 20) {
+    res.status(400).json({ error: "Cart too large — maximum 20 line items" });
+    return;
+  }
+  for (const item of items) {
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 20) {
+      res.status(400).json({
+        error: `Invalid quantity for "${item.title}" — must be a whole number between 1 and 20`,
+      });
+      return;
+    }
+    if (!item.product_id || typeof item.product_id !== "number") {
+      res.status(400).json({ error: "Invalid product_id in cart" });
+      return;
+    }
+  }
+
   // ── Server-side price validation ──────────────────────────────────────────
   // Never trust client-supplied prices — look them up from the DB
   try {

@@ -4,10 +4,21 @@
 import pg from "pg";
 const { Pool } = pg;
 
-// Create one shared pool — reuses connections efficiently
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  // Connection pool limits — keeps DB stable under thousands of concurrent users
+  max: 20,                    // max simultaneous DB connections
+  min: 2,                     // keep 2 warm connections ready at all times
+  idleTimeoutMillis: 30_000,  // release idle connections after 30s
+  connectionTimeoutMillis: 5_000, // fail fast if DB is unreachable (5s)
+  // Prevent queries from hanging forever
+  query_timeout: 10_000,      // kill any query taking over 10s
+});
+
+// Log pool errors so they surface in server logs, not silently crash
+pool.on("error", (err) => {
+  console.error("[DB] Unexpected pool error:", err);
 });
 
 // Helper: run a query and return rows
