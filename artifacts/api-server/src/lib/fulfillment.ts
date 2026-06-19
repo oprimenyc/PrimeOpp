@@ -9,8 +9,8 @@ export interface OrderItem {
   color: string;
   price: number;
   pod_provider?: string;
-  printful_variant_id?: string;
-  tapstitch_variant_id?: string;
+  printful_variant_id?: string | null;
+  tapstitch_variant_id?: string | null;
 }
 
 export interface ShippingAddress {
@@ -42,17 +42,24 @@ export async function submitToPrintful(
     return { provider: "printful", order_id: "PENDING_API_KEY", status: "skipped" };
   }
 
-  // Build Printful order payload
-  // Each item needs a Printful sync variant ID (set up in your Printful store)
-  const lineItems = items
-    .filter(i => !i.pod_provider || i.pod_provider === "printful")
-    .map(item => ({
-      sync_variant_id: item.printful_variant_id ?? null,
-      quantity: item.quantity,
-      // Fallback: use external_id to match manually
-      external_id: `product-${item.product_id}`,
-      files: [],
-    }));
+  const printfulItems = items.filter(i => !i.pod_provider || i.pod_provider === "printful");
+
+  // Reject items that have no variant ID — can't fulfill without it
+  const itemsMissingVariant = printfulItems.filter(i => !i.printful_variant_id);
+  if (itemsMissingVariant.length > 0) {
+    const titles = itemsMissingVariant.map(i => `"${i.title}"`).join(", ");
+    console.error(`[Printful] Cannot fulfill — missing printful_variant_id for: ${titles}`);
+    return {
+      provider: "printful",
+      order_id: "error",
+      status: `blocked: missing variant IDs for ${itemsMissingVariant.length} item(s)`,
+    };
+  }
+
+  const lineItems = printfulItems.map(item => ({
+    sync_variant_id: item.printful_variant_id,
+    quantity: item.quantity,
+  }));
 
   if (lineItems.length === 0) {
     return { provider: "printful", order_id: "none", status: "no_items" };
@@ -70,9 +77,7 @@ export async function submitToPrintful(
       email: customerEmail,
     },
     items: lineItems,
-    retail_costs: {
-      currency: "USD",
-    },
+    retail_costs: { currency: "USD" },
   };
 
   try {
@@ -102,7 +107,6 @@ export async function submitToPrintful(
 }
 
 // Submit to Tapstitch
-// Docs: https://tapstitch.com (uses Bearer token auth)
 export async function submitToTapstitch(
   items: OrderItem[],
   shipping: ShippingAddress,
@@ -114,16 +118,28 @@ export async function submitToTapstitch(
     return { provider: "tapstitch", order_id: "PENDING_API_KEY", status: "skipped" };
   }
 
-  const tapstitchItems = items
-    .filter(i => i.pod_provider === "tapstitch")
-    .map(item => ({
-      variant_id: item.tapstitch_variant_id ?? `product-${item.product_id}`,
-      quantity: item.quantity,
-      size: item.size,
-      color: item.color,
-    }));
+  const tapstitchItems = items.filter(i => i.pod_provider === "tapstitch");
 
-  if (tapstitchItems.length === 0) {
+  // Reject items missing a real variant ID — never use a fallback string
+  const itemsMissingVariant = tapstitchItems.filter(i => !i.tapstitch_variant_id);
+  if (itemsMissingVariant.length > 0) {
+    const titles = itemsMissingVariant.map(i => `"${i.title}"`).join(", ");
+    console.error(`[Tapstitch] Cannot fulfill — missing tapstitch_variant_id for: ${titles}`);
+    return {
+      provider: "tapstitch",
+      order_id: "error",
+      status: `blocked: missing variant IDs for ${itemsMissingVariant.length} item(s)`,
+    };
+  }
+
+  const lineItems = tapstitchItems.map(item => ({
+    variant_id: item.tapstitch_variant_id,
+    quantity: item.quantity,
+    size: item.size,
+    color: item.color,
+  }));
+
+  if (lineItems.length === 0) {
     return { provider: "tapstitch", order_id: "none", status: "no_items" };
   }
 
@@ -138,7 +154,7 @@ export async function submitToTapstitch(
       country: shipping.country,
       email: customerEmail,
     },
-    line_items: tapstitchItems,
+    line_items: lineItems,
     currency: "USD",
   };
 

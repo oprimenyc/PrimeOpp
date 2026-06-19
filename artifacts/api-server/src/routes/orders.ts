@@ -125,19 +125,26 @@ router.get("/checkout/session/:id", async (req, res) => {
 router.post("/webhook", async (req, res) => {
   const stripe = getStripe();
   if (!stripe) {
-    res.status(200).send("ok"); // Don't fail if not configured
+    res.status(200).send("ok");
     return;
   }
 
   const webhookSecret = process.env["STRIPE_WEBHOOK_SECRET"];
+  const isProduction = process.env["NODE_ENV"] === "production";
   let event: Stripe.Event;
 
   try {
     if (webhookSecret) {
       const sig = req.headers["stripe-signature"] as string;
       event = stripe.webhooks.constructEvent(req.body as Buffer, sig, webhookSecret);
+    } else if (isProduction) {
+      // In production, NEVER process unverified webhook events
+      console.error("[Webhook] CRITICAL: STRIPE_WEBHOOK_SECRET not set in production — rejecting event");
+      res.status(400).send("Webhook secret not configured");
+      return;
     } else {
-      // In dev without webhook secret, parse raw body
+      // Dev only — parse without verification
+      console.warn("[Webhook] No STRIPE_WEBHOOK_SECRET — accepting without signature (dev mode only)");
       event = JSON.parse((req.body as Buffer).toString()) as Stripe.Event;
     }
   } catch (err) {
@@ -149,32 +156,40 @@ router.post("/webhook", async (req, res) => {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    // Only process paid sessions
     if (session.payment_status !== "paid") {
       res.json({ received: true });
       return;
     }
 
+    // ── Step 1: Parse session data ──────────────────────────────────────────
+    const items: OrderItem[] = (() => {
+      try {
+        return JSON.parse(session.metadata?.["items"] ?? "[]") as OrderItem[];
+      } catch {
+        console.error("[Webhook] CRITICAL: Could not parse items from session metadata", session.id);
+        return [];
+      }
+    })();
+
+    const customerEmail = session.customer_details?.email ?? "";
+    const customerName = session.customer_details?.name ?? "";
+    const shipping = session.shipping_details;
+    const total = (session.amount_total ?? 0) / 100;
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+    const shippingAddr: ShippingAddress = {
+      name: customerName,
+      line1: shipping?.address?.line1 ?? "",
+      line2: shipping?.address?.line2 ?? undefined,
+      city: shipping?.address?.city ?? "",
+      state: shipping?.address?.state ?? "",
+      postal_code: shipping?.address?.postal_code ?? "",
+      country: shipping?.address?.country ?? "US",
+    };
+
+    // ── Step 2: Save order to DB ─────────────────────────────────────────────
+    let orderId: number;
     try {
-      // Parse items from session metadata
-      const items: OrderItem[] = JSON.parse(session.metadata?.["items"] ?? "[]") as OrderItem[];
-      const customerEmail = session.customer_details?.email ?? "";
-      const customerName = session.customer_details?.name ?? "";
-      const shipping = session.shipping_details;
-      const total = (session.amount_total ?? 0) / 100;
-      const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-      const shippingAddr: ShippingAddress = {
-        name: customerName,
-        line1: shipping?.address?.line1 ?? "",
-        line2: shipping?.address?.line2 ?? undefined,
-        city: shipping?.address?.city ?? "",
-        state: shipping?.address?.state ?? "",
-        postal_code: shipping?.address?.postal_code ?? "",
-        country: shipping?.address?.country ?? "US",
-      };
-
-      // Save order to DB
       const orderRows = await query<{ id: number }>(
         `INSERT INTO orders
           (stripe_session_id, stripe_payment_intent, status, customer_email, customer_name,
@@ -194,22 +209,47 @@ router.post("/webhook", async (req, res) => {
         ]
       );
 
-      const orderId = orderRows[0]?.id ?? 0;
-      console.log("[Webhook] Order saved:", orderId);
-
-      // Auto-fulfill with Printful / Tapstitch
-      if (items.length > 0 && shippingAddr.line1) {
-        const results = await fulfillOrder(items, shippingAddr, customerEmail);
-        if (results.length > 0) {
-          const r = results[0];
-          await query(
-            "UPDATE orders SET fulfillment_provider=$1, fulfillment_order_id=$2, fulfillment_status=$3 WHERE id=$4",
-            [r.provider, r.order_id, r.status, orderId]
-          );
-        }
+      if (!orderRows[0]?.id) {
+        throw new Error(`DB returned no order ID for session ${session.id}`);
       }
 
-      // Send confirmation email
+      orderId = orderRows[0].id;
+      console.log("[Webhook] Order saved:", orderId);
+    } catch (err) {
+      // CRITICAL — customer was charged but order wasn't saved
+      console.error("[Webhook] CRITICAL: Failed to save order to DB — session:", session.id, err);
+      // Still return 200 so Stripe doesn't retry indefinitely;
+      // the DBA / admin must manually reconcile using the session ID above.
+      res.json({ received: true, error: "order_save_failed" });
+      return;
+    }
+
+    // ── Step 3: Fulfill with Printful / Tapstitch ────────────────────────────
+    if (items.length > 0 && shippingAddr.line1) {
+      try {
+        const results = await fulfillOrder(items, shippingAddr, customerEmail);
+        if (results.length > 0) {
+          // Save ALL results (supports mixed Printful + Tapstitch carts)
+          const summary = results.map(r => r.status).join(", ");
+          const providers = results.map(r => r.provider).join(", ");
+          const orderIds = results.map(r => r.order_id).join(", ");
+          await query(
+            "UPDATE orders SET fulfillment_provider=$1, fulfillment_order_id=$2, fulfillment_status=$3 WHERE id=$4",
+            [providers, orderIds, summary, orderId]
+          );
+        }
+      } catch (err) {
+        // Non-fatal — order is saved and paid, but fulfillment needs manual retry
+        console.error("[Webhook] Fulfillment error for order", orderId, err);
+        await query(
+          "UPDATE orders SET fulfillment_status=$1 WHERE id=$2",
+          ["error: fulfillment threw unexpectedly", orderId]
+        ).catch((dbErr) => console.error("[Webhook] Could not save fulfillment error status:", dbErr));
+      }
+    }
+
+    // ── Step 4: Send confirmation email ─────────────────────────────────────
+    try {
       await sendOrderConfirmation({
         customerEmail,
         customerName,
@@ -231,7 +271,8 @@ router.post("/webhook", async (req, res) => {
         },
       });
     } catch (err) {
-      console.error("[Webhook] Order processing error:", err);
+      // Non-fatal — order is saved, fulfillment submitted; email can be sent manually
+      console.error("[Webhook] Email send failed for order", orderId, err);
     }
   }
 
