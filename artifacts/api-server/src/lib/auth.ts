@@ -1,30 +1,55 @@
-// auth.ts — simple JWT-based admin authentication
-// Hardcoded credentials for now — easy to upgrade later
+// auth.ts — JWT-based admin authentication
+// Credentials and secret come from environment variables.
+// Hardcoded fallbacks exist for local dev ONLY — production requires real env vars.
 
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
 
-// Admin credentials — change these to whatever you want!
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "primeopp2025";
+const isProduction = process.env["NODE_ENV"] === "production";
 
-// Secret used to sign JWT tokens — keep this private!
-const JWT_SECRET = process.env.JWT_SECRET ?? "primeopp-super-secret-2025";
-
-// How long a login token lasts
-const TOKEN_EXPIRY = "7d";
-
-// Check username and password — returns a signed token or null
-export function login(username: string, password: string): string | null {
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    return jwt.sign({ role: "admin" }, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
+function getAdminUsername(): string {
+  const val = process.env["ADMIN_USERNAME"];
+  if (!val && isProduction) {
+    throw new Error("CRITICAL: ADMIN_USERNAME env var not set in production");
   }
-  return null;
+  return val ?? "admin";
 }
 
-// Middleware: protects routes that need admin login
+function getAdminPassword(): string {
+  const val = process.env["ADMIN_PASSWORD"];
+  if (!val && isProduction) {
+    throw new Error("CRITICAL: ADMIN_PASSWORD env var not set in production");
+  }
+  return val ?? "primeopp2025";
+}
+
+function getJwtSecret(): string {
+  const val = process.env["JWT_SECRET"];
+  if (!val) {
+    if (isProduction) {
+      throw new Error("CRITICAL: JWT_SECRET env var not set in production");
+    }
+    console.warn("[Auth] JWT_SECRET not set — using insecure default (dev only)");
+    return "primeopp-dev-secret-CHANGE-IN-PRODUCTION";
+  }
+  return val;
+}
+
+const TOKEN_EXPIRY = "7d";
+
+export function login(username: string, password: string): string | null {
+  try {
+    if (username === getAdminUsername() && password === getAdminPassword()) {
+      return jwt.sign({ role: "admin" }, getJwtSecret(), { expiresIn: TOKEN_EXPIRY });
+    }
+    return null;
+  } catch (err) {
+    console.error("[Auth] login error:", err);
+    return null;
+  }
+}
+
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  // Token comes in the Authorization header: "Bearer <token>"
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
@@ -34,8 +59,8 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
   }
 
   try {
-    jwt.verify(token, JWT_SECRET);
-    next(); // Token is valid — continue to the route
+    jwt.verify(token, getJwtSecret());
+    next();
   } catch {
     res.status(401).json({ error: "Token expired or invalid" });
   }

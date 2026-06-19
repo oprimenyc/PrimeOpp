@@ -34,6 +34,47 @@ router.post("/checkout/session", async (req, res) => {
     return;
   }
 
+  // ── Server-side price validation ──────────────────────────────────────────
+  // Never trust client-supplied prices — look them up from the DB
+  try {
+    const productIds = [...new Set(items.map((i) => i.product_id))];
+    const dbRows = await query<{
+      id: number;
+      price: string | number | null;
+      colors: Array<{ name: string; hex: string; price: number }> | null;
+    }>(
+      `SELECT id, price, colors FROM products WHERE id = ANY($1::int[])`,
+      [productIds]
+    );
+
+    if (dbRows.length !== productIds.length) {
+      const foundIds = new Set(dbRows.map((r) => r.id));
+      const missing = productIds.filter((id) => !foundIds.has(id));
+      res.status(400).json({ error: `Product(s) not found: ${missing.join(", ")}` });
+      return;
+    }
+
+    const priceMap = new Map(dbRows.map((r) => ({
+      id: r.id,
+      basePrice: Number(r.price ?? 0),
+      colors: Array.isArray(r.colors) ? r.colors : [],
+    })).map((r) => [r.id, r]));
+
+    // Overwrite client-supplied prices with authoritative DB prices
+    for (const item of items) {
+      const product = priceMap.get(item.product_id);
+      if (!product) continue;
+      const colorVariant = item.color
+        ? product.colors.find((c) => c.name === item.color)
+        : null;
+      item.price = colorVariant ? Number(colorVariant.price) : product.basePrice;
+    }
+  } catch (err) {
+    console.error("[Checkout] Price validation error:", err);
+    res.status(500).json({ error: "Could not validate product prices" });
+    return;
+  }
+
   // Build the origin from the request headers
   const origin = req.headers["origin"] as string ?? req.headers["referer"] as string ?? "https://primeopp.com";
   const baseUrl = origin.replace(/\/$/, "");
@@ -42,7 +83,7 @@ router.post("/checkout/session", async (req, res) => {
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item) => ({
       price_data: {
         currency: "usd",
-        unit_amount: Math.round(item.price * 100), // cents
+        unit_amount: Math.round(item.price * 100), // cents — now from DB
         product_data: {
           name: item.title,
           description: [item.size, item.color].filter(Boolean).join(" / ") || undefined,
@@ -305,9 +346,22 @@ router.get("/orders/:id", requireAdmin, async (req, res) => {
   }
 });
 
+const ALLOWED_ORDER_STATUSES = new Set([
+  "pending", "paid", "processing", "fulfilled",
+  "shipped", "delivered", "refunded", "cancelled", "fulfillment_failed",
+]);
+
 // PATCH /api/orders/:id/status — admin: update order status
 router.patch("/orders/:id/status", requireAdmin, async (req, res) => {
   const { status } = req.body as { status: string };
+
+  if (!status || !ALLOWED_ORDER_STATUSES.has(status)) {
+    res.status(400).json({
+      error: `Invalid status. Allowed: ${[...ALLOWED_ORDER_STATUSES].join(", ")}`,
+    });
+    return;
+  }
+
   try {
     const rows = await query(
       "UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *",

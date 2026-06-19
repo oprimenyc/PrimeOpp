@@ -4,7 +4,24 @@ import router from "./routes/index.js";
 
 const app: Express = express();
 
-app.use(cors());
+// Restrict CORS to the app's own origin in production
+const allowedOrigins = process.env["ALLOWED_ORIGINS"]
+  ? process.env["ALLOWED_ORIGINS"].split(",").map((o) => o.trim())
+  : null; // null = allow all (dev)
+
+app.use(cors({
+  origin: allowedOrigins
+    ? (origin, callback) => {
+        // Allow same-origin requests (no Origin header) and listed origins
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error(`CORS: origin ${origin} not allowed`));
+        }
+      }
+    : true,
+  credentials: true,
+}));
 
 // Stripe webhooks need the raw body — must come BEFORE express.json()
 app.use("/api/webhook", express.raw({ type: "application/json" }));
