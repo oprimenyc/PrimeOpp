@@ -64,12 +64,12 @@ PrimeOpp e-commerce + affiliate marketing storefront. Edgy black/red streetwear 
   - `src/lib/api.ts` — all fetch calls to the API (products CRUD, auth)
   - `src/pages/home.tsx` — hero carousel + POD grid + affiliate grid
   - `src/pages/product.tsx` — POD product detail page with color picker
-  - `src/pages/admin-login.tsx` — secure login page (admin / primeopp2025)
+  - `src/pages/admin-login.tsx` — secure login page (credentials from env vars)
   - `src/pages/admin.tsx` — full admin panel (dashboard, add/edit/delete, image upload)
   - `src/components/ProductCard.tsx` — card with color swatches; POD→detail, Affiliate→new tab
   - `src/components/Navbar.tsx` — top navbar
   - `src/index.css` — global styles (black/red theme)
-- **Auth**: JWT stored in localStorage; admin: `admin` / `primeopp2025`
+- **Auth**: JWT stored in localStorage; admin credentials set via `ADMIN_USERNAME` / `ADMIN_PASSWORD` env vars
 - **Product types**: `pod` (print-on-demand) and `affiliate`
 - **Color variants**: per-product color options with individual pricing
 

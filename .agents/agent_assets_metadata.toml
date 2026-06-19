@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "BfifoDSbXRSQQBgQNcyoZ"
+uri = "file://README.md"
+type = "text"
+title = "PrimeOpp — Complete README"
