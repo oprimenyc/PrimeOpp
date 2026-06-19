@@ -1,4 +1,4 @@
-// PrimeOpp Homepage — fetches products from the real database
+// PrimeOpp Homepage
 
 import { useState, useEffect } from "react";
 import { fetchProducts, type Product } from "@/lib/api";
@@ -10,7 +10,6 @@ function HomePage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [fading, setFading] = useState(false);
 
-  // Load products from the API on first render
   useEffect(() => {
     fetchProducts()
       .then(setProducts)
@@ -18,11 +17,9 @@ function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Hero shows only POD products
   const heroProducts = products.filter((p) => p.type === "pod");
   const featured = heroProducts[activeIndex % Math.max(heroProducts.length, 1)];
 
-  // Auto-advance hero every 4 seconds
   useEffect(() => {
     if (heroProducts.length < 2) return;
     const id = setInterval(() => {
@@ -52,7 +49,6 @@ function HomePage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/40" />
           <div className="relative z-10 h-full flex flex-col justify-end pb-16 px-6 sm:px-12 max-w-[1600px] mx-auto">
-            {/* Dots */}
             {heroProducts.length > 1 && (
               <div className="absolute top-24 left-6 sm:left-12 flex items-center gap-3">
                 <span className="text-red-600 font-black text-xs tracking-[0.3em]">
@@ -91,14 +87,13 @@ function HomePage() {
       {/* ===== MARQUEE ===== */}
       <div className="w-full bg-red-600 py-4 overflow-hidden flex whitespace-nowrap border-y-4 border-white">
         <div className="animate-marquee inline-block font-black text-2xl md:text-4xl text-white tracking-widest">
-          FREE SHIPPING · LIMITED DROP · SOLD OUT SOON · ORDER NOW · FREE SHIPPING · LIMITED DROP · SOLD OUT SOON · ORDER NOW ·&nbsp;
+          LIMITED DROP · SHIPS WORLDWIDE · PRINT ON DEMAND · EXCLUSIVE DESIGN · LIMITED DROP · SHIPS WORLDWIDE · PRINT ON DEMAND · EXCLUSIVE DESIGN ·&nbsp;
         </div>
       </div>
 
       {/* ===== PRODUCTS GRID ===== */}
       <section id="shop" className="py-24 bg-[#111] w-full px-6 sm:px-12">
         <div className="max-w-[1600px] mx-auto">
-          {/* Heading */}
           <div className="mb-16 border-b-4 border-white pb-6 flex justify-between items-end">
             <h2 className="text-5xl md:text-7xl font-black text-white leading-none tracking-tighter">DROP 01</h2>
             <p className="text-red-600 font-bold tracking-widest text-xl hidden md:block">// ALL SALES FINAL</p>
@@ -114,7 +109,6 @@ function HomePage() {
             </p>
           )}
 
-          {/* POD products */}
           {products.filter((p) => p.type === "pod").length > 0 && (
             <div className="mb-16">
               <p className="text-xs font-black tracking-[0.4em] text-zinc-500 mb-6">ORIGINAL DROPS</p>
@@ -126,7 +120,6 @@ function HomePage() {
             </div>
           )}
 
-          {/* Affiliate products */}
           {products.filter((p) => p.type === "affiliate").length > 0 && (
             <div>
               <p className="text-xs font-black tracking-[0.4em] text-zinc-500 mb-6">ALSO COPPING — PARTNER PICKS</p>
@@ -140,25 +133,100 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ===== SOCIAL PROOF ===== */}
-      <section className="bg-black text-white py-24 border-y border-zinc-800">
-        <div className="max-w-[1600px] mx-auto px-6 flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-8">
-          <h2 className="font-black text-[15vw] md:text-[10vw] leading-none tracking-tighter">500+</h2>
-          <div className="flex flex-col gap-2">
-            <h3 className="font-black text-3xl md:text-5xl tracking-widest text-red-600">SATISFIED</h3>
-            <h3 className="font-black text-3xl md:text-5xl tracking-widest">CUSTOMERS</h3>
+      {/* ===== BRAND SECTION ===== */}
+      <section className="bg-black py-24 px-6 sm:px-12 border-t border-zinc-900">
+        <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="text-red-600 text-[10px] tracking-[0.5em] font-black mb-4">THE BRAND</p>
+            <h2 className="text-5xl md:text-7xl font-black text-white leading-none tracking-tighter mb-8">
+              NO<br />RULES.<br />JUST<br />DROPS.
+            </h2>
+            <p className="text-zinc-400 text-sm leading-relaxed normal-case max-w-sm">
+              PrimeOpp is not just a store — it's a mindset. We make bold streetwear for the ones who don't follow trends, they set them. Every drop is limited. Every piece is exclusive.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { num: "100%", label: "Original Designs" },
+              { num: "POD", label: "Print On Demand" },
+              { num: "24H", label: "Order Processing" },
+              { num: "∞", label: "Limited Drops" },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-zinc-950 border border-zinc-900 p-8 text-center">
+                <p className="text-red-600 font-black text-4xl mb-2">{stat.num}</p>
+                <p className="text-zinc-500 text-[10px] tracking-[0.3em] font-bold">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== HOW IT WORKS ===== */}
+      <section className="bg-zinc-950 py-20 px-6 sm:px-12 border-t border-zinc-900">
+        <div className="max-w-[1600px] mx-auto">
+          <p className="text-zinc-600 text-[10px] tracking-[0.5em] font-black mb-10 text-center">HOW IT WORKS</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0">
+            {[
+              { step: "01", title: "Pick Your Drop", desc: "Choose your size and colorway from our exclusive collection." },
+              { step: "02", title: "We Print It", desc: "Your item is printed fresh on demand — no mass production, ever." },
+              { step: "03", title: "You Receive It", desc: "Ships directly to your door in 5–10 business days worldwide." },
+            ].map((item, i) => (
+              <div key={item.step} className={`p-10 ${i < 2 ? "border-b sm:border-b-0 sm:border-r border-zinc-800" : ""}`}>
+                <p className="text-red-600 font-black text-5xl mb-4">{item.step}</p>
+                <h3 className="text-white font-black text-lg tracking-widest mb-3">{item.title}</h3>
+                <p className="text-zinc-500 text-sm normal-case leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer className="bg-black py-20 px-6 sm:px-12">
-        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
-          <h4 className="font-black text-6xl md:text-8xl text-white tracking-tighter hover:text-red-600 transition-colors cursor-pointer">PRIMEOPP</h4>
-          <div className="flex gap-8 text-sm font-bold tracking-widest text-zinc-500">
-            <a href="#" className="hover:text-white transition-colors">INSTAGRAM</a>
-            <a href="#" className="hover:text-white transition-colors">TWITTER</a>
-            <a href="#" className="hover:text-white transition-colors">TERMS</a>
+      <footer className="bg-black border-t border-zinc-900 py-16 px-6 sm:px-12">
+        <div className="max-w-[1600px] mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
+
+            {/* Brand */}
+            <div>
+              <h4 className="font-black text-5xl text-white tracking-tighter hover:text-red-600 transition-colors cursor-default mb-3">PRIMEOPP</h4>
+              <p className="text-zinc-600 text-xs normal-case tracking-widest max-w-xs">
+                Premium streetwear drops for those who dare to stand out.
+              </p>
+            </div>
+
+            {/* Links */}
+            <div className="grid grid-cols-2 gap-x-16 gap-y-3">
+              <div>
+                <p className="text-[9px] font-black tracking-[0.4em] text-zinc-700 mb-3">SHOP</p>
+                <a href="#shop" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Products</a>
+                <a href="/cart" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Cart</a>
+              </div>
+              <div>
+                <p className="text-[9px] font-black tracking-[0.4em] text-zinc-700 mb-3">LEGAL</p>
+                <a href="/terms" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Terms of Service</a>
+                <a href="/privacy" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Privacy Policy</a>
+              </div>
+              <div>
+                <p className="text-[9px] font-black tracking-[0.4em] text-zinc-700 mb-3">CONTACT</p>
+                <a href="mailto:support@primeopp.com" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors normal-case mb-2">support@primeopp.com</a>
+              </div>
+              <div>
+                <p className="text-[9px] font-black tracking-[0.4em] text-zinc-700 mb-3">FOLLOW</p>
+                <a href="https://instagram.com/primeopp" target="_blank" rel="noopener noreferrer" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Instagram</a>
+                <a href="https://tiktok.com/@primeopp" target="_blank" rel="noopener noreferrer" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">TikTok</a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="border-t border-zinc-900 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-zinc-700 text-[10px] tracking-widest normal-case">
+              © {new Date().getFullYear()} PrimeOpp. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4">
+              <span className="text-zinc-700 text-[10px] tracking-widest">🔒 SECURE CHECKOUT</span>
+              <span className="text-zinc-700 text-[10px] tracking-widest">STRIPE VERIFIED</span>
+            </div>
           </div>
         </div>
       </footer>

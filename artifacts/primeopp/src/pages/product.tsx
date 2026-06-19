@@ -14,6 +14,7 @@ function ProductPage() {
   const [error, setError] = useState("");
   const [selectedColor, setSelectedColor] = useState<number | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
@@ -81,7 +82,7 @@ function ProductPage() {
       title: product.title,
       thumbnail_url: product.thumbnail_url,
       price: Number(displayPrice),
-      quantity: 1,
+      quantity,
       size: selectedSize,
       color: chosenColor?.name ?? "",
       pod_provider: product.pod_provider ?? "printful",
@@ -207,6 +208,22 @@ function ProductPage() {
               </div>
             </div>
           )}
+
+          {/* Quantity */}
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.4em] text-zinc-500 mb-3 uppercase">Quantity</p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="w-10 h-10 border border-zinc-700 text-zinc-400 hover:border-white hover:text-white text-lg font-black transition-colors"
+              >−</button>
+              <span className="text-white font-black text-lg w-8 text-center">{quantity}</span>
+              <button
+                onClick={() => setQuantity((q) => Math.min(10, q + 1))}
+                className="w-10 h-10 border border-zinc-700 text-zinc-400 hover:border-white hover:text-white text-lg font-black transition-colors"
+              >+</button>
+            </div>
+          </div>
 
           {/* Shipping info */}
           {product.shipping_info && (
