@@ -20,6 +20,8 @@ const emptyForm = {
   external_link: "",
   stock_level: "",
   shipping_info: "",
+  pod_provider: "printful" as "printful" | "tapstitch",
+  sizes: "S, M, L, XL, XXL",
 };
 
 type ImageMode = "upload" | "url";
@@ -117,6 +119,11 @@ function AdminPage() {
 
     setSaving(true);
     try {
+      // Parse sizes from comma-separated string
+      const sizesArray = form.type === "pod"
+        ? form.sizes.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+        : [];
+
       const payload = {
         type: form.type,
         title: form.title.trim(),
@@ -128,6 +135,8 @@ function AdminPage() {
         stock_level: form.type === "pod" && form.stock_level ? parseInt(form.stock_level) : null,
         shipping_info: form.type === "pod" ? form.shipping_info.trim() || null : null,
         colors: colors.length > 0 ? colors.map((c) => ({ ...c, price: Number(c.price) })) : [],
+        sizes: sizesArray,
+        pod_provider: form.type === "pod" ? form.pod_provider : null,
       };
 
       if (editingId !== null) {
@@ -157,6 +166,8 @@ function AdminPage() {
       external_link: p.external_link ?? "",
       stock_level: p.stock_level !== null ? String(p.stock_level) : "",
       shipping_info: p.shipping_info ?? "",
+      pod_provider: (p.pod_provider as "printful" | "tapstitch") ?? "printful",
+      sizes: Array.isArray(p.sizes) && p.sizes.length > 0 ? p.sizes.join(", ") : "S, M, L, XL, XXL",
     });
     setColors(Array.isArray(p.colors) ? [...p.colors] : []);
     setEditingId(p.id);
@@ -209,6 +220,7 @@ function AdminPage() {
           <p className="text-red-600 text-[10px] tracking-[0.4em] font-bold mt-0.5">ADMIN PANEL</p>
         </div>
         <div className="flex gap-3">
+          <a href="/admin/orders" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">📦 ORDERS</a>
           <a href="/" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">← STORE</a>
           <button onClick={handleLogout} className="text-[10px] font-bold tracking-widest border border-zinc-800 px-3 py-2 text-zinc-500 hover:border-red-600 hover:text-red-600 transition-colors">LOGOUT</button>
         </div>
@@ -301,20 +313,58 @@ function AdminPage() {
 
             {/* POD-only fields */}
             {form.type === "pod" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">STOCK / INVENTORY</label>
-                  <input type="number" min="0" placeholder="e.g. 100" value={form.stock_level}
-                    onChange={(e) => setForm({ ...form, stock_level: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm" />
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">STOCK / INVENTORY</label>
+                    <input type="number" min="0" placeholder="e.g. 100" value={form.stock_level}
+                      onChange={(e) => setForm({ ...form, stock_level: e.target.value })}
+                      className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">SHIPPING INFO</label>
+                    <input type="text" placeholder="e.g. Ships in 3-5 days" value={form.shipping_info}
+                      onChange={(e) => setForm({ ...form, shipping_info: e.target.value })}
+                      className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm normal-case" />
+                  </div>
                 </div>
+
+                {/* Sizes */}
                 <div>
-                  <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">SHIPPING INFO</label>
-                  <input type="text" placeholder="e.g. Ships in 3-5 days" value={form.shipping_info}
-                    onChange={(e) => setForm({ ...form, shipping_info: e.target.value })}
-                    className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm normal-case" />
+                  <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">SIZES (comma-separated)</label>
+                  <input
+                    type="text"
+                    placeholder="S, M, L, XL, XXL"
+                    value={form.sizes}
+                    onChange={(e) => setForm({ ...form, sizes: e.target.value })}
+                    className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm normal-case"
+                  />
+                  <p className="text-zinc-600 text-[10px] normal-case mt-1 tracking-widest">
+                    Preview: {form.sizes.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean).map((s) => (
+                      <span key={s} className="inline-block bg-zinc-800 text-zinc-300 text-[9px] px-2 py-0.5 mx-0.5">{s}</span>
+                    ))}
+                  </p>
                 </div>
-              </div>
+
+                {/* POD Provider */}
+                <div>
+                  <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-3">FULFILLMENT PROVIDER</label>
+                  <div className="flex border border-zinc-700 w-fit">
+                    {(["printful", "tapstitch"] as const).map((p) => (
+                      <button key={p} type="button"
+                        onClick={() => setForm((f) => ({ ...f, pod_provider: p }))}
+                        className={`px-6 py-3 text-xs font-black tracking-widest transition-colors ${form.pod_provider === p ? "bg-red-600 text-white" : "text-zinc-500 hover:text-white"}`}>
+                        {p === "printful" ? "🖨️ PRINTFUL" : "🪡 TAPSTITCH"}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-zinc-600 text-[10px] normal-case mt-2 tracking-widest">
+                    {form.pod_provider === "printful"
+                      ? "Orders will be auto-submitted to Printful for printing and shipping."
+                      : "Orders will be auto-submitted to Tapstitch for production and fulfillment."}
+                  </p>
+                </div>
+              </>
             )}
 
             {/* Affiliate-only field */}

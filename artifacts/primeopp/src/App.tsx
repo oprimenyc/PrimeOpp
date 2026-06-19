@@ -6,14 +6,24 @@ import Navbar from "@/components/Navbar";
 import HomePage from "@/pages/home";
 import AdminPage from "@/pages/admin";
 import AdminLogin from "@/pages/admin-login";
+import AdminOrdersPage from "@/pages/admin-orders";
 import ProductPage from "@/pages/product";
+import CartPage from "@/pages/cart";
+import OrderSuccessPage from "@/pages/order-success";
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
 
 const queryClient = new QueryClient();
 
 function Router() {
   const [location] = useLocation();
-  // Hide the store navbar on admin pages and product detail page
-  const hideNav = location.startsWith("/admin") || location.startsWith("/product");
+  const hideNav =
+    location.startsWith("/admin") ||
+    location.startsWith("/product") ||
+    location.startsWith("/cart") ||
+    location.startsWith("/order-success") ||
+    location.startsWith("/terms") ||
+    location.startsWith("/privacy");
 
   return (
     <>
@@ -21,7 +31,12 @@ function Router() {
       <Switch>
         <Route path="/" component={HomePage} />
         <Route path="/product/:id" component={ProductPage} />
+        <Route path="/cart" component={CartPage} />
+        <Route path="/order-success" component={OrderSuccessPage} />
+        <Route path="/terms" component={TermsPage} />
+        <Route path="/privacy" component={PrivacyPage} />
         <Route path="/admin/login" component={AdminLogin} />
+        <Route path="/admin/orders" component={AdminOrdersPage} />
         <Route path="/admin" component={AdminPage} />
         <Route component={NotFound} />
       </Switch>

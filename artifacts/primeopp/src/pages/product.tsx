@@ -1,10 +1,10 @@
 // Product detail page — /product/:id
-// Shows full info for a POD product with color selection.
-// Affiliate products redirect automatically.
+// Includes size + color picker, Add to Cart, and direct Buy Now via Stripe
 
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { fetchProduct, type Product } from "@/lib/api";
+import { addToCart, type CartItem } from "@/lib/cart";
 
 function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,19 +13,23 @@ function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedColor, setSelectedColor] = useState<number | null>(null);
-  const [ordered, setOrdered] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<string>("");
+  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
         const p = await fetchProduct(Number(id));
-        // If affiliate, redirect to external link immediately
         if (p.type === "affiliate" && p.external_link) {
           window.open(p.external_link, "_blank");
           setLocation("/");
           return;
         }
         setProduct(p);
+        // Auto-select if only one size
+        if (Array.isArray(p.sizes) && p.sizes.length === 1) {
+          setSelectedSize(p.sizes[0]);
+        }
       } catch {
         setError("Product not found.");
       } finally {
@@ -53,24 +57,59 @@ function ProductPage() {
   }
 
   const colors = Array.isArray(product.colors) ? product.colors : [];
+  const sizes = Array.isArray(product.sizes) ? product.sizes : [];
   const chosenColor = selectedColor !== null ? colors[selectedColor] : null;
-  const displayPrice = chosenColor ? chosenColor.price : (product.price ?? 0);
+  const basePrice = Number(product.price ?? 0);
+  const displayPrice = chosenColor ? Number(chosenColor.price) : basePrice;
 
-  function handleOrder() {
-    if (colors.length > 0 && selectedColor === null) {
-      alert("Please pick a color first!");
-      return;
-    }
-    setOrdered(true);
+  const needsSize = sizes.length > 0 && !selectedSize;
+  const needsColor = colors.length > 0 && selectedColor === null;
+  const canAddToCart = !needsSize && !needsColor;
+
+  function getButtonLabel() {
+    if (needsSize && needsColor) return "SELECT SIZE & COLOR →";
+    if (needsSize) return "SELECT SIZE →";
+    if (needsColor) return "SELECT COLOR →";
+    return "ADD TO CART";
+  }
+
+  function handleAddToCart() {
+    if (!canAddToCart || !product) return;
+
+    const item: CartItem = {
+      product_id: product.id,
+      title: product.title,
+      thumbnail_url: product.thumbnail_url,
+      price: Number(displayPrice),
+      quantity: 1,
+      size: selectedSize,
+      color: chosenColor?.name ?? "",
+      pod_provider: product.pod_provider ?? "printful",
+    };
+
+    addToCart(item);
+    // Notify Navbar to update cart count
+    window.dispatchEvent(new Event("cart-updated"));
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2500);
+  }
+
+  function handleBuyNow() {
+    if (!canAddToCart || !product) return;
+    handleAddToCart();
+    setLocation("/cart");
   }
 
   return (
     <div className="min-h-screen bg-black text-white">
 
       {/* Back nav */}
-      <div className="border-b border-zinc-900 px-6 py-4">
+      <div className="border-b border-zinc-900 px-6 py-4 flex items-center justify-between">
         <a href="/" className="text-xs text-zinc-500 tracking-widest uppercase hover:text-white transition-colors">
           ← Back to shop
+        </a>
+        <a href="/cart" className="text-xs text-zinc-500 tracking-widest uppercase hover:text-white transition-colors">
+          View Cart →
         </a>
       </div>
 
@@ -86,12 +125,17 @@ function ProductPage() {
         </div>
 
         {/* Product info */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
 
-          {/* Category badge */}
-          {product.category && (
-            <span className="text-[10px] font-bold tracking-[0.4em] text-red-600 uppercase">{product.category}</span>
-          )}
+          {/* Category + provider badge */}
+          <div className="flex items-center gap-3">
+            {product.category && (
+              <span className="text-[10px] font-bold tracking-[0.4em] text-red-600 uppercase">{product.category}</span>
+            )}
+            <span className="text-[9px] font-bold tracking-[0.3em] text-zinc-600 uppercase border border-zinc-800 px-2 py-0.5">
+              {product.pod_provider === "tapstitch" ? "TAPSTITCH" : "PRINTFUL"}
+            </span>
+          </div>
 
           {/* Title */}
           <h1 className="text-4xl font-black tracking-wide uppercase leading-tight">{product.title}</h1>
@@ -99,9 +143,9 @@ function ProductPage() {
           {/* Price */}
           <div className="flex items-baseline gap-3">
             <span className="text-3xl font-black text-red-600">${displayPrice.toFixed(2)}</span>
-            {chosenColor && chosenColor.price > (product.price ?? 0) && (
+            {chosenColor && Number(chosenColor.price) > basePrice && (
               <span className="text-xs text-zinc-500 tracking-widest uppercase">
-                +${(chosenColor.price - (product.price ?? 0)).toFixed(2)} for {chosenColor.name}
+                +${(Number(chosenColor.price) - basePrice).toFixed(2)} for {chosenColor.name}
               </span>
             )}
           </div>
@@ -109,6 +153,30 @@ function ProductPage() {
           {/* Description */}
           {product.description && (
             <p className="text-zinc-400 text-sm leading-relaxed normal-case">{product.description}</p>
+          )}
+
+          {/* Size picker */}
+          {sizes.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.4em] text-zinc-500 mb-3 uppercase">
+                {selectedSize ? `Size: ${selectedSize}` : "Pick a size"}
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {sizes.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(selectedSize === size ? "" : size)}
+                    className={`min-w-[44px] h-10 px-3 text-xs font-black tracking-widest uppercase border transition-colors ${
+                      selectedSize === size
+                        ? "bg-red-600 border-red-600 text-white"
+                        : "bg-transparent border-zinc-700 text-zinc-400 hover:border-white hover:text-white"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Color picker */}
@@ -123,7 +191,7 @@ function ProductPage() {
                     key={color.name}
                     onClick={() => setSelectedColor(selectedColor === i ? null : i)}
                     title={`${color.name} — $${color.price.toFixed(2)}`}
-                    className="relative w-9 h-9 rounded-full transition-transform hover:scale-110"
+                    className="relative w-9 h-9 transition-transform hover:scale-110"
                     style={{
                       backgroundColor: color.hex,
                       outline: selectedColor === i ? "2px solid #FF0000" : "2px solid #333",
@@ -152,19 +220,45 @@ function ProductPage() {
             </p>
           )}
 
-          {/* Order button / confirmation */}
-          {ordered ? (
-            <div className="bg-zinc-950 border-l-4 border-red-600 px-6 py-4">
-              <p className="text-white font-black tracking-widest text-sm uppercase">✓ Order received!</p>
-              <p className="text-zinc-400 text-xs normal-case mt-1">We'll contact you to confirm your order.</p>
+          {/* Buttons */}
+          {product.stock_level !== 0 && (
+            <div className="flex flex-col gap-3">
+              {/* Add to Cart — primary action */}
+              {addedToCart ? (
+                <div className="bg-zinc-950 border-l-4 border-red-600 px-6 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-black tracking-widest text-sm uppercase">✓ Added to cart!</p>
+                    <p className="text-zinc-400 text-xs normal-case mt-1">Ready to checkout</p>
+                  </div>
+                  <a href="/cart" className="text-red-600 text-xs font-black tracking-widest uppercase hover:text-white transition-colors">
+                    View Cart →
+                  </a>
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  disabled={!canAddToCart}
+                  className="bg-red-600 text-white font-black text-sm py-5 tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {getButtonLabel()}
+                </button>
+              )}
+
+              {/* Buy Now — skip cart */}
+              {canAddToCart && (
+                <button
+                  onClick={handleBuyNow}
+                  className="border border-zinc-700 text-white font-black text-sm py-4 tracking-[0.3em] uppercase hover:border-white transition-colors"
+                >
+                  BUY NOW — ${displayPrice.toFixed(2)}
+                </button>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={handleOrder}
-              disabled={product.stock_level === 0}
-              className="bg-red-600 text-white font-black text-sm py-5 tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {colors.length > 0 && selectedColor === null ? "SELECT COLOR →" : "BUY NOW"}
+          )}
+
+          {product.stock_level === 0 && (
+            <button disabled className="bg-zinc-900 text-zinc-600 font-black text-sm py-5 tracking-[0.3em] uppercase cursor-not-allowed">
+              OUT OF STOCK
             </button>
           )}
         </div>

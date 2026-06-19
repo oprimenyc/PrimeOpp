@@ -44,10 +44,10 @@ router.post("/products", requireAdmin, async (req, res) => {
   try {
     const {
       type, title, description, price, category,
-      thumbnail_url, external_link, stock_level, shipping_info, colors,
+      thumbnail_url, external_link, stock_level, shipping_info,
+      colors, sizes, pod_provider,
     } = req.body as Record<string, unknown>;
 
-    // Validate required fields
     if (!type || !title) {
       res.status(400).json({ error: "type and title are required" });
       return;
@@ -55,14 +55,17 @@ router.post("/products", requireAdmin, async (req, res) => {
 
     const rows = await query(
       `INSERT INTO products
-        (type, title, description, price, category, thumbnail_url, external_link, stock_level, shipping_info, colors)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        (type, title, description, price, category, thumbnail_url, external_link,
+         stock_level, shipping_info, colors, sizes, pod_provider)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING *`,
       [
         type, title, description ?? null, price ?? null, category ?? null,
         thumbnail_url ?? null, external_link ?? null,
         stock_level ?? null, shipping_info ?? null,
         JSON.stringify(colors ?? []),
+        JSON.stringify(sizes ?? []),
+        pod_provider ?? "printful",
       ]
     );
     res.status(201).json(rows[0]);
@@ -77,21 +80,24 @@ router.put("/products/:id", requireAdmin, async (req, res) => {
   try {
     const {
       type, title, description, price, category,
-      thumbnail_url, external_link, stock_level, shipping_info, colors,
+      thumbnail_url, external_link, stock_level, shipping_info,
+      colors, sizes, pod_provider,
     } = req.body as Record<string, unknown>;
 
     const rows = await query(
       `UPDATE products SET
         type=$1, title=$2, description=$3, price=$4, category=$5,
         thumbnail_url=$6, external_link=$7, stock_level=$8,
-        shipping_info=$9, colors=$10
-       WHERE id=$11
+        shipping_info=$9, colors=$10, sizes=$11, pod_provider=$12
+       WHERE id=$13
        RETURNING *`,
       [
         type, title, description ?? null, price ?? null, category ?? null,
         thumbnail_url ?? null, external_link ?? null,
         stock_level ?? null, shipping_info ?? null,
         JSON.stringify(colors ?? []),
+        JSON.stringify(sizes ?? []),
+        pod_provider ?? "printful",
         req.params.id,
       ]
     );
