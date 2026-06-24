@@ -6,3 +6,9 @@ id = "BfifoDSbXRSQQBgQNcyoZ"
 uri = "file://README.md"
 type = "text"
 title = "PrimeOpp — Complete README"
+
+[[outputs]]
+id = "QmnSgQiR4IWyU2jsnj-k9"
+uri = "file://AUDIT.md"
+type = "text"
+title = "PrimeOpp — Full Production Readiness Audit"
