@@ -1,3 +1,5 @@
+// PrimeOpp Homepage
+
 import { useState, useEffect } from "react";
 import { fetchProducts, type Product } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
@@ -15,7 +17,7 @@ function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const heroProducts = products.filter((p) => p.type !== "affiliate");
+  const heroProducts = products.filter((p) => p.type === "pod");
   const featured = heroProducts[activeIndex % Math.max(heroProducts.length, 1)];
 
   useEffect(() => {
@@ -85,7 +87,7 @@ function HomePage() {
       {/* ===== MARQUEE ===== */}
       <div className="w-full bg-red-600 py-4 overflow-hidden flex whitespace-nowrap border-y-4 border-white">
         <div className="animate-marquee inline-block font-black text-2xl md:text-4xl text-white tracking-widest">
-          LIMITED DROP · SHIPS WORLDWIDE · EXCLUSIVE DESIGN · NEW ARRIVALS · LIMITED DROP · SHIPS WORLDWIDE · EXCLUSIVE DESIGN · NEW ARRIVALS ·&nbsp;
+          LIMITED DROP · SHIPS WORLDWIDE · PRINT ON DEMAND · EXCLUSIVE DESIGN · LIMITED DROP · SHIPS WORLDWIDE · PRINT ON DEMAND · EXCLUSIVE DESIGN ·&nbsp;
         </div>
       </div>
 
@@ -107,11 +109,11 @@ function HomePage() {
             </p>
           )}
 
-          {products.filter((p) => p.type !== "affiliate").length > 0 && (
+          {products.filter((p) => p.type === "pod").length > 0 && (
             <div className="mb-16">
               <p className="text-xs font-black tracking-[0.4em] text-zinc-500 mb-6">ORIGINAL DROPS</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {products.filter((p) => p.type !== "affiliate").map((p) => (
+                {products.filter((p) => p.type === "pod").map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
               </div>
@@ -146,13 +148,33 @@ function HomePage() {
           <div className="grid grid-cols-2 gap-4">
             {[
               { num: "100%", label: "Original Designs" },
-              { num: "LIMITED", label: "Every Drop" },
+              { num: "POD", label: "Print On Demand" },
               { num: "24H", label: "Order Processing" },
-              { num: "∞", label: "Exclusive Drops" },
+              { num: "∞", label: "Limited Drops" },
             ].map((stat) => (
               <div key={stat.label} className="bg-zinc-950 border border-zinc-900 p-8 text-center">
                 <p className="text-red-600 font-black text-4xl mb-2">{stat.num}</p>
                 <p className="text-zinc-500 text-[10px] tracking-[0.3em] font-bold">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== HOW IT WORKS ===== */}
+      <section className="bg-zinc-950 py-20 px-6 sm:px-12 border-t border-zinc-900">
+        <div className="max-w-[1600px] mx-auto">
+          <p className="text-zinc-600 text-[10px] tracking-[0.5em] font-black mb-10 text-center">HOW IT WORKS</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0">
+            {[
+              { step: "01", title: "Pick Your Drop", desc: "Choose your size and colorway from our exclusive collection." },
+              { step: "02", title: "We Print It", desc: "Your item is printed fresh on demand — no mass production, ever." },
+              { step: "03", title: "You Receive It", desc: "Ships directly to your door in 5–10 business days worldwide." },
+            ].map((item, i) => (
+              <div key={item.step} className={`p-10 ${i < 2 ? "border-b sm:border-b-0 sm:border-r border-zinc-800" : ""}`}>
+                <p className="text-red-600 font-black text-5xl mb-4">{item.step}</p>
+                <h3 className="text-white font-black text-lg tracking-widest mb-3">{item.title}</h3>
+                <p className="text-zinc-500 text-sm normal-case leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>

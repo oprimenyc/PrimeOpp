@@ -23,7 +23,7 @@ function TermsPage() {
 
           <section>
             <h2 className="text-white font-bold tracking-widest uppercase text-xs mb-3">2. Products & Orders</h2>
-            <p>All items are made to order. We reserve the right to cancel any order at our discretion. Prices are listed in USD and may change without notice. We do our best to display accurate product images and descriptions.</p>
+            <p>All print-on-demand items are made to order. We reserve the right to cancel any order at our discretion. Prices are listed in USD and may change without notice. We do our best to display accurate product images and descriptions.</p>
           </section>
 
           <section>

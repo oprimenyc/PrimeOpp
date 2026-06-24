@@ -1,9 +1,14 @@
+// ProductCard — shows one product in the store grid.
+// POD products link to the detail page.
+// Affiliate products open the external link in a new tab.
+
 import { useState } from "react";
 import { type Product } from "@/lib/api";
 
 interface Props { product: Product }
 
 function ProductCard({ product }: Props) {
+  // Track which color is selected (null = none)
   const [selectedColorIndex, setSelectedColorIndex] = useState<number | null>(null);
 
   const colors = Array.isArray(product.colors) ? product.colors : [];
@@ -12,9 +17,11 @@ function ProductCard({ product }: Props) {
 
   function handleBuyNow() {
     if (product.type === "affiliate" && product.external_link) {
+      // Affiliate: open the partner link in a new tab
       window.open(product.external_link, "_blank", "noopener,noreferrer");
       return;
     }
+    // POD: navigate to the detail page
     window.location.href = `/product/${product.id}`;
   }
 
@@ -36,7 +43,7 @@ function ProductCard({ product }: Props) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-zinc-700 text-6xl">
-            {product.type === "affiliate" ? "🔗" : "🛍️"}
+            {product.type === "affiliate" ? "🔗" : "👕"}
           </div>
         )}
       </div>
@@ -58,8 +65,8 @@ function ProductCard({ product }: Props) {
           )}
         </div>
 
-        {/* Color swatches */}
-        {colors.length > 0 && (
+        {/* Color swatches — POD products only */}
+        {product.type === "pod" && colors.length > 0 && (
           <div>
             <p className="text-[10px] font-bold tracking-[0.3em] text-zinc-500 mb-2 uppercase">
               {selectedColor ? `COLOR: ${selectedColor.name}` : "PICK A COLOR:"}
@@ -95,7 +102,7 @@ function ProductCard({ product }: Props) {
       <button
         onClick={handleBuyNow}
         className={`mt-auto w-full font-bold font-sans tracking-widest py-4 uppercase transition-colors ${
-          colors.length > 0 && selectedColorIndex === null
+          product.type === "pod" && colors.length > 0 && selectedColorIndex === null
             ? "bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-white"
             : "bg-zinc-900 text-white hover:bg-red-600 hover:text-white"
         }`}

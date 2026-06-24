@@ -20,7 +20,10 @@ const emptyForm = {
   external_link: "",
   stock_level: "",
   shipping_info: "",
+  pod_provider: "printful" as "printful" | "tapstitch",
   sizes: "S, M, L, XL, XXL",
+  printful_variant_id: "",
+  tapstitch_variant_id: "",
 };
 
 type ImageMode = "upload" | "url";
@@ -135,9 +138,9 @@ function AdminPage() {
         shipping_info: form.type === "pod" ? form.shipping_info.trim() || null : null,
         colors: colors.length > 0 ? colors.map((c) => ({ ...c, price: Number(c.price) })) : [],
         sizes: sizesArray,
-        pod_provider: null,
-        printful_variant_id: null,
-        tapstitch_variant_id: null,
+        pod_provider: form.type === "pod" ? form.pod_provider : null,
+        printful_variant_id: form.type === "pod" && form.pod_provider === "printful" ? (form.printful_variant_id.trim() || null) : null,
+        tapstitch_variant_id: form.type === "pod" && form.pod_provider === "tapstitch" ? (form.tapstitch_variant_id.trim() || null) : null,
       };
 
       if (editingId !== null) {
@@ -167,7 +170,10 @@ function AdminPage() {
       external_link: p.external_link ?? "",
       stock_level: p.stock_level !== null ? String(p.stock_level) : "",
       shipping_info: p.shipping_info ?? "",
+      pod_provider: (p.pod_provider as "printful" | "tapstitch") ?? "printful",
       sizes: Array.isArray(p.sizes) && p.sizes.length > 0 ? p.sizes.join(", ") : "S, M, L, XL, XXL",
+      printful_variant_id: p.printful_variant_id ?? "",
+      tapstitch_variant_id: p.tapstitch_variant_id ?? "",
     });
     setColors(Array.isArray(p.colors) ? [...p.colors] : []);
     setEditingId(p.id);
@@ -199,7 +205,7 @@ function AdminPage() {
   }
 
   // Dashboard counts
-  const directCount = products.filter((p) => p.type !== "affiliate").length;
+  const podCount = products.filter((p) => p.type === "pod").length;
   const affiliateCount = products.filter((p) => p.type === "affiliate").length;
 
   return (
@@ -237,7 +243,7 @@ function AdminPage() {
         <section className="grid grid-cols-3 gap-4">
           {[
             { label: "TOTAL PRODUCTS", value: products.length, color: "text-white" },
-            { label: "DIRECT PRODUCTS", value: directCount, color: "text-red-600" },
+            { label: "POD ITEMS", value: podCount, color: "text-red-600" },
             { label: "AFFILIATE ITEMS", value: affiliateCount, color: "text-zinc-400" },
           ].map((stat) => (
             <div key={stat.label} className="bg-zinc-950 border border-zinc-800 p-5 text-center">
@@ -255,7 +261,7 @@ function AdminPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Product type toggle */}
+            {/* POD / Affiliate toggle */}
             <div>
               <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-3">PRODUCT TYPE *</label>
               <div className="flex border border-zinc-700 w-fit">
@@ -263,7 +269,7 @@ function AdminPage() {
                   <button key={t} type="button"
                     onClick={() => setForm((f) => ({ ...f, type: t }))}
                     className={`px-6 py-3 text-xs font-black tracking-widest transition-colors ${form.type === t ? "bg-red-600 text-white" : "text-zinc-500 hover:text-white"}`}>
-                    {t === "pod" ? "🛍️ PRODUCT" : "🔗 AFFILIATE"}
+                    {t === "pod" ? "👕 PRINT-ON-DEMAND" : "🔗 AFFILIATE"}
                   </button>
                 ))}
               </div>
@@ -301,7 +307,7 @@ function AdminPage() {
             {/* Price */}
             <div>
               <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">
-                {form.type === "pod" ? "PRICE (USD) *" : "PRICE (USD) — display only"}
+                {form.type === "pod" ? "PRICE (USD) *" : "PRICE (USD) — for display only"}
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">$</span>
@@ -346,6 +352,53 @@ function AdminPage() {
                   </p>
                 </div>
 
+                {/* POD Provider */}
+                <div>
+                  <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-3">FULFILLMENT PROVIDER</label>
+                  <div className="flex border border-zinc-700 w-fit">
+                    {(["printful", "tapstitch"] as const).map((p) => (
+                      <button key={p} type="button"
+                        onClick={() => setForm((f) => ({ ...f, pod_provider: p }))}
+                        className={`px-6 py-3 text-xs font-black tracking-widest transition-colors ${form.pod_provider === p ? "bg-red-600 text-white" : "text-zinc-500 hover:text-white"}`}>
+                        {p === "printful" ? "🖨️ PRINTFUL" : "🪡 TAPSTITCH"}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-zinc-600 text-[10px] normal-case mt-2 tracking-widest">
+                    {form.pod_provider === "printful"
+                      ? "Orders will be auto-submitted to Printful for printing and shipping."
+                      : "Orders will be auto-submitted to Tapstitch for production and fulfillment."}
+                  </p>
+                </div>
+
+                {/* Variant ID */}
+                <div>
+                  <label className="block text-[10px] font-black tracking-[0.4em] text-zinc-400 mb-2">
+                    {form.pod_provider === "printful" ? "PRINTFUL SYNC VARIANT ID" : "TAPSTITCH VARIANT ID"}
+                  </label>
+                  {form.pod_provider === "printful" ? (
+                    <input
+                      type="text"
+                      placeholder="e.g. 123456789"
+                      value={form.printful_variant_id}
+                      onChange={(e) => setForm({ ...form, printful_variant_id: e.target.value })}
+                      className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm normal-case font-mono"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="e.g. ts_variant_abc123"
+                      value={form.tapstitch_variant_id}
+                      onChange={(e) => setForm({ ...form, tapstitch_variant_id: e.target.value })}
+                      className="w-full bg-zinc-900 border border-zinc-700 focus:border-red-600 outline-none px-4 py-3 text-white text-sm normal-case font-mono"
+                    />
+                  )}
+                  <p className="text-zinc-600 text-[10px] normal-case mt-1 tracking-widest">
+                    {form.pod_provider === "printful"
+                      ? "Find this in Printful → Stores → your product → Sync Variants. Required for auto-fulfillment."
+                      : "Find this in your Tapstitch product dashboard. Required for auto-fulfillment."}
+                  </p>
+                </div>
               </>
             )}
 
@@ -360,7 +413,7 @@ function AdminPage() {
               </div>
             )}
 
-            {/* Color variants */}
+            {/* Color variants (POD only) */}
             {form.type === "pod" && (
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -516,7 +569,7 @@ function AdminPage() {
                       <td className="py-3 pr-4 w-14">
                         {p.thumbnail_url
                           ? <img src={p.thumbnail_url} alt={p.title} className="w-12 h-12 object-cover bg-zinc-800 cursor-zoom-in" onClick={() => setLightbox(p.thumbnail_url!)} />
-                          : <div className="w-12 h-12 bg-zinc-900 flex items-center justify-center text-zinc-600 text-lg">{p.type === "pod" ? "🛍️" : "🔗"}</div>
+                          : <div className="w-12 h-12 bg-zinc-900 flex items-center justify-center text-zinc-600 text-lg">{p.type === "pod" ? "👕" : "🔗"}</div>
                         }
                       </td>
                       {/* Title + category */}
@@ -534,7 +587,7 @@ function AdminPage() {
                       {/* Type badge */}
                       <td className="py-3 pr-4">
                         <span className={`text-[9px] font-black tracking-widest px-2 py-1 ${p.type === "pod" ? "bg-red-600 text-white" : "bg-zinc-800 text-zinc-300"}`}>
-                          {p.type === "pod" ? "PRODUCT" : "AFFILIATE"}
+                          {p.type === "pod" ? "POD" : "AFFILIATE"}
                         </span>
                       </td>
                       {/* Price */}

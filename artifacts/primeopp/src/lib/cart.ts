@@ -8,6 +8,9 @@ export interface CartItem {
   quantity: number;
   size: string;
   color: string;
+  pod_provider: string;
+  printful_variant_id?: string | null;
+  tapstitch_variant_id?: string | null;
 }
 
 const CART_KEY = "primeopp_cart";
