@@ -1,0 +1,224 @@
+# Phase 2 Audit – Operations & Enterprise Admin Review
+
+Perform an additional audit focused on internal business operations, fulfillment management, staff workflows, and long-term scalability.
+
+## Operations Portal (Separate From Admin)
+
+Evaluate whether operations staff have a dedicated interface separate from administrative controls.
+
+Required roles:
+
+* Super Admin
+* Admin
+* Operations Manager
+* Fulfillment Agent
+* Customer Support
+* Marketing Manager
+* Finance
+
+Verify least-privilege permissions.
+
+Examples:
+
+* Support cannot modify pricing.
+* Marketing cannot issue refunds.
+* Fulfillment cannot access financial reports.
+* Operations cannot change security settings.
+
+Flag any role escalation vulnerabilities.
+
+---
+
+## Artwork Review System
+
+Audit POD artwork moderation workflows.
+
+Required functionality:
+
+* Pending review queue
+* Approve artwork
+* Reject artwork
+* Request customer changes
+* Internal notes
+* Artwork status history
+* Re-review workflow
+
+Verify:
+
+* Review actions are logged.
+* Artwork cannot bypass approval workflows.
+* Rejected designs cannot enter production.
+
+---
+
+## Fulfillment Operations Dashboard
+
+Audit internal fulfillment tools.
+
+Required:
+
+* Fulfillment queue
+* Failed fulfillment queue
+* Retry fulfillment button
+* Reassign fulfillment provider
+* Production status tracking
+* Shipping exception tracking
+* Supplier outage monitoring
+
+Verify:
+
+* Failed jobs are visible.
+* Staff can recover failed orders.
+* Duplicate fulfillment submissions are prevented.
+
+---
+
+## Customer Service Console
+
+Audit support workflows.
+
+Required:
+
+* Customer lookup
+* Order lookup
+* Conversation history
+* Refund requests
+* Replacement requests
+* Shipping issue management
+* Internal staff notes
+
+Verify:
+
+* Support actions are logged.
+* Sensitive data is masked.
+* Refund permissions are role-restricted.
+
+---
+
+## Finance & Accounting
+
+Audit financial controls.
+
+Required:
+
+* Revenue dashboard
+* Tax reporting
+* Refund reporting
+* Chargeback reporting
+* Supplier cost tracking
+* Gross margin reporting
+* Payout reconciliation
+
+Verify:
+
+* Reports reconcile with Stripe.
+* Refunds are tracked.
+* Chargebacks generate alerts.
+
+---
+
+## Inventory & Supplier Management
+
+Audit supplier operations.
+
+Required:
+
+* Supplier health monitoring
+* Product-provider mapping
+* Provider failover capability
+* Supplier pricing updates
+* Supplier outage alerts
+
+Verify:
+
+* Products can switch providers.
+* Provider outages do not break checkout.
+* Pricing discrepancies are detected.
+
+---
+
+## Internal Notification System
+
+Audit business alerts.
+
+Required alerts:
+
+* Failed payment
+* Fulfillment failure
+* Chargeback
+* Refund issued
+* Inventory issue
+* Supplier outage
+* Security event
+* Admin login anomaly
+
+Verify:
+
+* Alerts are actionable.
+* Escalation rules exist.
+* Critical alerts reach email/Slack.
+
+---
+
+## Audit Logging & Compliance
+
+Audit all internal actions.
+
+Required logging:
+
+* Login
+* Logout
+* Refund
+* Product changes
+* Pricing changes
+* Order modifications
+* Fulfillment retries
+* User role changes
+
+Verify:
+
+* Immutable audit trail
+* Timestamp
+* IP address
+* User ID
+* Previous value
+* New value
+
+---
+
+## Business Continuity
+
+Audit disaster recovery readiness.
+
+Required:
+
+* Backup validation
+* Restore testing
+* Fulfillment recovery procedures
+* Stripe outage procedures
+* Provider outage procedures
+* Incident response runbooks
+
+Verify:
+
+* Recovery processes are documented.
+* Staff can continue operations during outages.
+
+---
+
+## Operational Readiness Score
+
+Generate additional scores:
+
+* Operations Score (0-100)
+* Fulfillment Reliability Score (0-100)
+* Support Readiness Score (0-100)
+* Finance Controls Score (0-100)
+* Disaster Recovery Score (0-100)
+
+Identify all launch blockers and scaling blockers for:
+
+* 100 orders/day
+* 1,000 orders/day
+* 10,000 orders/day
+* 100,000 orders/day

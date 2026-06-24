@@ -12,3 +12,9 @@ id = "QmnSgQiR4IWyU2jsnj-k9"
 uri = "file://AUDIT.md"
 type = "text"
 title = "PrimeOpp — Full Production Readiness Audit"
+
+[[outputs]]
+id = "uVPYa46DSB2VPSqeEQadq"
+uri = "file://AUDIT_PHASE2.md"
+type = "text"
+title = "Phase 2 Audit — Operations & Enterprise Admin Review"
