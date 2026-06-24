@@ -33,7 +33,7 @@ function PrivacyPage() {
 
           <section>
             <h2 className="text-white font-bold tracking-widest uppercase text-xs mb-3">3. Sharing Your Information</h2>
-            <p>We share your shipping address and order details with our print-on-demand partners (Printful, Tapstitch) solely to fulfill your order. We do not sell or rent your personal information to third parties for marketing purposes.</p>
+            <p>We share your shipping address and order details with our fulfillment partners solely to fulfill your order. We do not sell or rent your personal information to third parties for marketing purposes.</p>
           </section>
 
           <section>

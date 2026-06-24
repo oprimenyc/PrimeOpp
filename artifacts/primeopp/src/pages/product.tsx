@@ -85,9 +85,6 @@ function ProductPage() {
       quantity,
       size: selectedSize,
       color: chosenColor?.name ?? "",
-      pod_provider: product.pod_provider ?? "printful",
-      printful_variant_id: product.printful_variant_id ?? null,
-      tapstitch_variant_id: product.tapstitch_variant_id ?? null,
     };
 
     addToCart(item);
@@ -130,14 +127,11 @@ function ProductPage() {
         {/* Product info */}
         <div className="flex flex-col gap-5">
 
-          {/* Category + provider badge */}
+          {/* Category badge */}
           <div className="flex items-center gap-3">
             {product.category && (
               <span className="text-[10px] font-bold tracking-[0.4em] text-red-600 uppercase">{product.category}</span>
             )}
-            <span className="text-[9px] font-bold tracking-[0.3em] text-zinc-600 uppercase border border-zinc-800 px-2 py-0.5">
-              {product.pod_provider === "tapstitch" ? "TAPSTITCH" : "PRINTFUL"}
-            </span>
           </div>
 
           {/* Title */}

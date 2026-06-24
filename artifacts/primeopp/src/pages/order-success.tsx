@@ -44,7 +44,7 @@ function OrderSuccessPage() {
     async function fetchSession() {
       try {
         const data = await verifyCheckoutSession(sessionId!);
-        setSession(data);
+        setSession(data as SessionData);
       } catch {
         setError("Could not verify order. Your payment went through — check your email for confirmation.");
       } finally {
