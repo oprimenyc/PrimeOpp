@@ -28,10 +28,16 @@ function Navbar() {
 
           <div className="flex items-center gap-6">
             <a
-              href="#shop"
+              href="/collections"
               className="flex items-center gap-2 text-white text-sm font-bold tracking-widest hover:text-red-600 transition-colors"
             >
               SHOP
+            </a>
+            <a
+              href="/search"
+              className="hidden sm:flex items-center gap-2 text-white text-sm font-bold tracking-widest hover:text-red-600 transition-colors"
+            >
+              SEARCH
             </a>
 
             {/* Cart icon with badge */}

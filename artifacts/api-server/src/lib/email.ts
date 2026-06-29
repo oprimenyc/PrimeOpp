@@ -132,5 +132,32 @@ export async function sendOrderConfirmation(data: OrderConfirmationData): Promis
     console.log("[Email] Confirmation sent:", result.data?.id);
   } catch (err) {
     console.error("[Email] Failed to send confirmation:", err);
+    throw err;
   }
+}
+
+export async function sendAbandonedCartReminder(data: {
+  customerEmail: string;
+  recoveryUrl: string;
+  subtotal: number;
+  itemCount: number;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return;
+
+  const fromEmail = process.env["FROM_EMAIL"] ?? "orders@primeopp.com";
+  const result = await client.emails.send({
+    from: `PrimeOpp <${fromEmail}>`,
+    to: data.customerEmail,
+    subject: "Your PrimeOpp cart is still waiting",
+    html: `
+      <div style="background:#000;color:#fff;font-family:Arial,sans-serif;padding:32px">
+        <h1 style="letter-spacing:.25em;text-transform:uppercase">PRIMEOPP</h1>
+        <p style="color:#aaa">You left ${data.itemCount} item${data.itemCount === 1 ? "" : "s"} in your cart.</p>
+        <p style="color:#ff0000;font-size:22px;font-weight:900">$${data.subtotal.toFixed(2)}</p>
+        <a href="${data.recoveryUrl}" style="display:inline-block;background:#ff0000;color:#fff;padding:14px 22px;text-decoration:none;font-weight:900;text-transform:uppercase;letter-spacing:.15em">Return to cart</a>
+      </div>
+    `,
+  });
+  console.log("[Email] Abandoned cart reminder sent:", result.data?.id);
 }

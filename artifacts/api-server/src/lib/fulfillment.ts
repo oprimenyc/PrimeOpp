@@ -29,12 +29,57 @@ export interface FulfillmentResult {
   status: string;
 }
 
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 25_000): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function findPrintfulOrder(apiKey: string, idempotencyKey: string): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(`https://api.printful.com/orders/@${encodeURIComponent(idempotencyKey)}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const data = await res.json() as { result?: { id?: number | string } };
+    return data.result?.id !== undefined ? String(data.result.id) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function findTapstitchOrder(apiKey: string, idempotencyKey: string): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(`https://api.tapstitch.com/v1/orders?external_id=${encodeURIComponent(idempotencyKey)}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Idempotency-Key": idempotencyKey,
+      },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const data = await res.json() as { id?: string; order_id?: string; data?: Array<{ id?: string; order_id?: string }> };
+    const first = Array.isArray(data.data) ? data.data[0] : null;
+    return data.id ?? data.order_id ?? first?.id ?? first?.order_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Submit to Printful
 // Docs: https://developers.printful.com/docs/#tag/Orders-API
 export async function submitToPrintful(
   items: OrderItem[],
   shipping: ShippingAddress,
-  customerEmail: string
+  customerEmail: string,
+  idempotencyKey: string
 ): Promise<FulfillmentResult> {
   const apiKey = process.env["PRINTFUL_API_KEY"];
   if (!apiKey) {
@@ -43,6 +88,10 @@ export async function submitToPrintful(
   }
 
   const printfulItems = items.filter(i => !i.pod_provider || i.pod_provider === "printful");
+  const existingOrderId = await findPrintfulOrder(apiKey, idempotencyKey);
+  if (existingOrderId) {
+    return { provider: "printful", order_id: existingOrderId, status: "submitted" };
+  }
 
   // Reject items that have no variant ID — can't fulfill without it
   const itemsMissingVariant = printfulItems.filter(i => !i.printful_variant_id);
@@ -66,6 +115,7 @@ export async function submitToPrintful(
   }
 
   const body = {
+    external_id: idempotencyKey,
     recipient: {
       name: shipping.name,
       address1: shipping.line1,
@@ -81,11 +131,12 @@ export async function submitToPrintful(
   };
 
   try {
-    const res = await fetch("https://api.printful.com/orders", {
+    const res = await fetchWithTimeout("https://api.printful.com/orders", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
       },
       body: JSON.stringify(body),
     });
@@ -110,7 +161,8 @@ export async function submitToPrintful(
 export async function submitToTapstitch(
   items: OrderItem[],
   shipping: ShippingAddress,
-  customerEmail: string
+  customerEmail: string,
+  idempotencyKey: string
 ): Promise<FulfillmentResult> {
   const apiKey = process.env["TAPSTITCH_API_KEY"];
   if (!apiKey) {
@@ -119,6 +171,10 @@ export async function submitToTapstitch(
   }
 
   const tapstitchItems = items.filter(i => i.pod_provider === "tapstitch");
+  const existingOrderId = await findTapstitchOrder(apiKey, idempotencyKey);
+  if (existingOrderId) {
+    return { provider: "tapstitch", order_id: existingOrderId, status: "submitted" };
+  }
 
   // Reject items missing a real variant ID — never use a fallback string
   const itemsMissingVariant = tapstitchItems.filter(i => !i.tapstitch_variant_id);
@@ -144,6 +200,8 @@ export async function submitToTapstitch(
   }
 
   const body = {
+    external_id: idempotencyKey,
+    client_order_id: idempotencyKey,
     shipping_address: {
       name: shipping.name,
       address_line_1: shipping.line1,
@@ -159,11 +217,12 @@ export async function submitToTapstitch(
   };
 
   try {
-    const res = await fetch("https://api.tapstitch.com/v1/orders", {
+    const res = await fetchWithTimeout("https://api.tapstitch.com/v1/orders", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
       },
       body: JSON.stringify(body),
     });
@@ -188,7 +247,8 @@ export async function submitToTapstitch(
 export async function fulfillOrder(
   items: OrderItem[],
   shipping: ShippingAddress,
-  customerEmail: string
+  customerEmail: string,
+  orderReference: string
 ): Promise<FulfillmentResult[]> {
   const results: FulfillmentResult[] = [];
 
@@ -196,12 +256,12 @@ export async function fulfillOrder(
   const tapstitchItems = items.filter(i => i.pod_provider === "tapstitch");
 
   if (printfulItems.length > 0) {
-    const r = await submitToPrintful(printfulItems, shipping, customerEmail);
+    const r = await submitToPrintful(printfulItems, shipping, customerEmail, `primeopp-${orderReference}-printful`);
     results.push(r);
   }
 
   if (tapstitchItems.length > 0) {
-    const r = await submitToTapstitch(tapstitchItems, shipping, customerEmail);
+    const r = await submitToTapstitch(tapstitchItems, shipping, customerEmail, `primeopp-${orderReference}-tapstitch`);
     results.push(r);
   }
 

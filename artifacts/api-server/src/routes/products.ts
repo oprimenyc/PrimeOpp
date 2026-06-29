@@ -1,14 +1,22 @@
-// products routes — full CRUD for products
-
 import { Router } from "express";
 import { query } from "../lib/db.js";
-import { requireAdmin } from "../lib/auth.js";
+import { requirePermission } from "../lib/auth.js";
+import { createAuditLog } from "../lib/audit.js";
+import { idParamSchema, productSchema, validateBody, validateParams } from "../lib/validation.js";
 
 const router = Router();
 
 router.get("/products", async (_req, res) => {
   try {
-    const products = await query("SELECT * FROM products ORDER BY created_at DESC");
+    const products = await query(
+      `SELECT p.*,
+              COALESCE(ROUND(AVG(r.rating)::numeric, 2), 0)::text AS average_rating,
+              COUNT(r.id)::text AS review_count
+       FROM products p
+       LEFT JOIN product_reviews r ON r.product_id = p.id AND r.status='approved'
+       GROUP BY p.id
+       ORDER BY p.created_at DESC`,
+    );
     res.json(products);
   } catch (err) {
     console.error("GET /products error:", err);
@@ -16,9 +24,18 @@ router.get("/products", async (_req, res) => {
   }
 });
 
-router.get("/products/:id", async (req, res) => {
+router.get("/products/:id", validateParams(idParamSchema), async (req, res) => {
   try {
-    const rows = await query("SELECT * FROM products WHERE id = $1", [req.params.id]);
+    const rows = await query(
+      `SELECT p.*,
+              COALESCE(ROUND(AVG(r.rating)::numeric, 2), 0)::text AS average_rating,
+              COUNT(r.id)::text AS review_count
+       FROM products p
+       LEFT JOIN product_reviews r ON r.product_id = p.id AND r.status='approved'
+       WHERE p.id = $1
+       GROUP BY p.id`,
+      [req.params.id],
+    );
     if (rows.length === 0) { res.status(404).json({ error: "Product not found" }); return; }
     res.json(rows[0]);
   } catch (err) {
@@ -27,15 +44,13 @@ router.get("/products/:id", async (req, res) => {
   }
 });
 
-router.post("/products", requireAdmin, async (req, res) => {
+router.post("/products", requirePermission("products:write"), validateBody(productSchema), async (req, res) => {
   try {
     const {
       type, title, description, price, category,
       thumbnail_url, external_link, stock_level, shipping_info,
       colors, sizes, pod_provider, printful_variant_id, tapstitch_variant_id,
     } = req.body as Record<string, unknown>;
-
-    if (!type || !title) { res.status(400).json({ error: "type and title are required" }); return; }
 
     const rows = await query(
       `INSERT INTO products
@@ -50,11 +65,12 @@ router.post("/products", requireAdmin, async (req, res) => {
         stock_level ?? null, shipping_info ?? null,
         JSON.stringify(colors ?? []),
         JSON.stringify(sizes ?? []),
-        pod_provider ?? "printful",
+        pod_provider ?? null,
         printful_variant_id ?? null,
         tapstitch_variant_id ?? null,
       ]
     );
+    await createAuditLog({ req, action: "product_create", entityType: "product", entityId: rows[0]?.id, after: rows[0] });
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error("POST /products error:", err);
@@ -62,8 +78,10 @@ router.post("/products", requireAdmin, async (req, res) => {
   }
 });
 
-router.put("/products/:id", requireAdmin, async (req, res) => {
+router.put("/products/:id", requirePermission("products:write"), validateParams(idParamSchema), validateBody(productSchema), async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    const before = await query("SELECT * FROM products WHERE id=$1", [id]);
     const {
       type, title, description, price, category,
       thumbnail_url, external_link, stock_level, shipping_info,
@@ -83,14 +101,15 @@ router.put("/products/:id", requireAdmin, async (req, res) => {
         stock_level ?? null, shipping_info ?? null,
         JSON.stringify(colors ?? []),
         JSON.stringify(sizes ?? []),
-        pod_provider ?? "printful",
+        pod_provider ?? null,
         printful_variant_id ?? null,
         tapstitch_variant_id ?? null,
-        req.params.id,
+        id,
       ]
     );
 
     if (rows.length === 0) { res.status(404).json({ error: "Product not found" }); return; }
+    await createAuditLog({ req, action: "product_update", entityType: "product", entityId: id, before: before[0], after: rows[0] });
     res.json(rows[0]);
   } catch (err) {
     console.error("PUT /products/:id error:", err);
@@ -98,10 +117,12 @@ router.put("/products/:id", requireAdmin, async (req, res) => {
   }
 });
 
-router.delete("/products/:id", requireAdmin, async (req, res) => {
+router.delete("/products/:id", requirePermission("products:delete"), validateParams(idParamSchema), async (req, res) => {
   try {
-    const rows = await query("DELETE FROM products WHERE id=$1 RETURNING id", [req.params.id]);
+    const id = Number(req.params.id);
+    const rows = await query("DELETE FROM products WHERE id=$1 RETURNING *", [id]);
     if (rows.length === 0) { res.status(404).json({ error: "Product not found" }); return; }
+    await createAuditLog({ req, action: "product_delete", entityType: "product", entityId: id, before: rows[0] });
     res.json({ deleted: true });
   } catch (err) {
     console.error("DELETE /products/:id error:", err);

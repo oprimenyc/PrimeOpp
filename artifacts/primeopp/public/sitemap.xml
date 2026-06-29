@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://primeopp.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://primeopp.com/collections</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://primeopp.com/search</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://primeopp.com/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://primeopp.com/contact</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://primeopp.com/faq</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://primeopp.com/shipping-policy</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://primeopp.com/refund-policy</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+</urlset>

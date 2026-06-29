@@ -1,9 +1,9 @@
 // Admin Login page — /admin/login
-// Credentials are set via ADMIN_USERNAME and ADMIN_PASSWORD environment variables.
+// Initial owner credentials are created from deployment environment variables.
 
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { adminLogin, isLoggedIn } from "@/lib/api";
+import { adminLogin } from "@/lib/api";
 
 function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -11,12 +11,6 @@ function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // If already logged in, redirect straight to admin
-  if (isLoggedIn()) {
-    setLocation("/admin");
-    return null;
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

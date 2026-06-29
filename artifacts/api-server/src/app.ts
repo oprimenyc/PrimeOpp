@@ -2,9 +2,18 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import { randomUUID } from "node:crypto";
 import router from "./routes/index.js";
 
 const app: Express = express();
+
+app.use((req, res, next) => {
+  const correlationId = req.headers["x-correlation-id"];
+  req.id = typeof correlationId === "string" && correlationId.length <= 100 ? correlationId : randomUUID();
+  res.setHeader("x-correlation-id", req.id);
+  next();
+});
 
 // Trust the first proxy (Replit's load balancer) so rate limiting uses real IPs
 // from X-Forwarded-For rather than the proxy's internal IP
@@ -34,6 +43,7 @@ app.use(cors({
     : true,
   credentials: true,
 }));
+app.use(cookieParser());
 
 // ── Rate limiters ─────────────────────────────────────────────────────────────
 
@@ -55,6 +65,23 @@ const checkoutLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: { error: "rate_limited" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  message: { error: "rate_limited" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => ["GET", "HEAD", "OPTIONS"].includes(req.method),
+});
+
 // General public API: 300 requests per IP per minute (generous for a storefront)
 const publicApiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -68,6 +95,9 @@ const publicApiLimiter = rateLimit({
 // Apply rate limiters BEFORE body parsing
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/checkout/session", checkoutLimiter);
+app.use("/api/products", uploadLimiter);
+app.use("/api/auth", adminLimiter);
+app.use("/api/orders", adminLimiter);
 app.use("/api", publicApiLimiter);
 
 // ── Body parsing ──────────────────────────────────────────────────────────────
@@ -88,12 +118,18 @@ app.use((_req: Request, res: Response) => {
 });
 
 // ── Global error handler ──────────────────────────────────────────────────────
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   // Don't leak internal error details to clients
   const isKnownError = err.message?.startsWith("CORS:");
-  console.error("Unhandled error:", err);
+  console.error(JSON.stringify({
+    level: "error",
+    correlationId: req.id,
+    message: err.message,
+    stack: process.env["NODE_ENV"] === "production" ? undefined : err.stack,
+  }));
   res.status(isKnownError ? 403 : 500).json({
-    error: isKnownError ? err.message : "Internal server error",
+    error: isKnownError ? err.message : "internal_server_error",
+    correlationId: req.id,
   });
 });
 

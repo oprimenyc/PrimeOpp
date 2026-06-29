@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import {
   fetchProducts, createProduct, updateProduct, deleteProduct,
-  adminLogout, isLoggedIn, verifyToken,
+  adminLogout, verifyToken,
   type Product, type ColorVariant,
 } from "@/lib/api";
 
@@ -46,7 +46,6 @@ function AdminPage() {
   // Check auth on load
   useEffect(() => {
     async function checkAuth() {
-      if (!isLoggedIn()) { setLocation("/admin/login"); return; }
       const valid = await verifyToken();
       if (!valid) { setLocation("/admin/login"); return; }
       await loadProducts();
@@ -200,7 +199,7 @@ function AdminPage() {
   }
 
   function handleLogout() {
-    adminLogout();
+    void adminLogout();
     setLocation("/admin/login");
   }
 
@@ -226,6 +225,7 @@ function AdminPage() {
           <p className="text-red-600 text-[10px] tracking-[0.4em] font-bold mt-0.5">ADMIN PANEL</p>
         </div>
         <div className="flex gap-3">
+          <a href="/admin/dashboard" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">DASHBOARD</a>
           <a href="/admin/orders" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">📦 ORDERS</a>
           <a href="/" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">← STORE</a>
           <button onClick={handleLogout} className="text-[10px] font-bold tracking-widest border border-zinc-800 px-3 py-2 text-zinc-500 hover:border-red-600 hover:text-red-600 transition-colors">LOGOUT</button>

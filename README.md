@@ -76,10 +76,10 @@ Customer clicks Buy Now
 Security was a primary design concern. Here is every layer of protection:
 
 ### Authentication
-- Admin panel protected by JWT tokens (7-day expiry)
-- Credentials loaded from `ADMIN_USERNAME` / `ADMIN_PASSWORD` env vars — **not hardcoded**
-- JWT signed with `JWT_SECRET` env var — required in production, no insecure fallback
-- Token stored in `localStorage`; all admin API calls require `Authorization: Bearer <token>`
+- Admin panel protected by database-backed httpOnly secure cookie sessions
+- Initial owner account is seeded from required deployment secrets
+- Admin requests use SameSite=Strict cookies plus CSRF protection
+- Logout revokes the server-side session
 
 ### Rate Limiting (`express-rate-limit`)
 | Endpoint | Limit | Window | Purpose |
@@ -154,9 +154,9 @@ Set all of these before going live. In Replit, add them under **Secrets**.
 ### Required for admin access (production)
 | Variable | Description | Notes |
 |---|---|---|
-| `ADMIN_USERNAME` | Admin login username | Choose anything |
-| `ADMIN_PASSWORD` | Admin login password | Use a strong password |
-| `JWT_SECRET` | Token signing secret | Random 32+ character string |
+| `ADMIN_EMAIL` | Initial owner admin email | Must be a real email address |
+| `ADMIN_PASSWORD` | Initial owner admin password | Use a strong password |
+| `SESSION_SECRET` | Session secret | Random 32+ character string |
 
 ### Optional
 | Variable | Description | Default |
@@ -181,8 +181,7 @@ The frontend proxies all `/api` calls to the API server automatically (configure
 
 ## Admin Panel
 
-Visit `/admin/login` in the store. Default dev credentials: `admin` / `primeopp2025`
-(Override with `ADMIN_USERNAME` / `ADMIN_PASSWORD` env vars in production.)
+Visit `/admin/login` in the store. The initial owner account is created from required environment variables.
 
 ### Adding a POD product
 1. Set type → **Print-on-Demand**
@@ -237,8 +236,7 @@ Before publishing:
 - [ ] `TAPSTITCH_API_KEY` set (if using Tapstitch)
 - [ ] `RESEND_API_KEY` set; domain verified in Resend
 - [ ] `FROM_EMAIL` set to a verified sender address
-- [ ] `ADMIN_USERNAME` and `ADMIN_PASSWORD` set to real values
-- [ ] `JWT_SECRET` set to a random 32+ character string
+- [ ] `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `SESSION_SECRET` set to production values
 - [ ] `ALLOWED_ORIGINS` set to `https://primeopp.com`
 - [ ] Every POD product has a Printful or Tapstitch Variant ID set
 - [ ] `support@primeopp.com` inbox active (or updated in `home.tsx`, `terms.tsx`, `privacy.tsx`)

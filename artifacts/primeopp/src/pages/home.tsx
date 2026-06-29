@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { fetchProducts, type Product } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
+import { Seo } from "@/components/Seo";
 
 function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -39,6 +40,33 @@ function HomePage() {
 
   return (
     <main className="min-h-screen bg-black selection:bg-red-600 selection:text-white font-sans uppercase">
+      <Seo
+        title="Premium Streetwear Drops"
+        description="Shop PrimeOpp print-on-demand streetwear, limited drops, and partner picks."
+        canonicalPath="/"
+        image={`${window.location.origin}/opengraph.jpg`}
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "PrimeOpp",
+            url: window.location.origin,
+            logo: `${window.location.origin}/favicon.svg`,
+            sameAs: ["https://instagram.com/primeopp", "https://tiktok.com/@primeopp"],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "PrimeOpp",
+            url: window.location.origin,
+            potentialAction: {
+              "@type": "SearchAction",
+              target: `${window.location.origin}/search?q={search_term_string}`,
+              "query-input": "required name=search_term_string",
+            },
+          },
+        ]}
+      />
 
       {/* ===== HERO ===== */}
       {featured && (
@@ -198,17 +226,22 @@ function HomePage() {
             <div className="grid grid-cols-2 gap-x-16 gap-y-3">
               <div>
                 <p className="text-[9px] font-black tracking-[0.4em] text-zinc-700 mb-3">SHOP</p>
-                <a href="#shop" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Products</a>
+                <a href="/collections" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Collections</a>
+                <a href="/search" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Search</a>
                 <a href="/cart" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Cart</a>
               </div>
               <div>
                 <p className="text-[9px] font-black tracking-[0.4em] text-zinc-700 mb-3">LEGAL</p>
                 <a href="/terms" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Terms of Service</a>
                 <a href="/privacy" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Privacy Policy</a>
+                <a href="/refund-policy" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Refund Policy</a>
+                <a href="/shipping-policy" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Shipping Policy</a>
               </div>
               <div>
                 <p className="text-[9px] font-black tracking-[0.4em] text-zinc-700 mb-3">CONTACT</p>
                 <a href="mailto:support@primeopp.com" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors normal-case mb-2">support@primeopp.com</a>
+                <a href="/contact" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">Contact</a>
+                <a href="/faq" className="block text-xs text-zinc-500 tracking-widest hover:text-white transition-colors mb-2">FAQ</a>
               </div>
               <div>
                 <p className="text-[9px] font-black tracking-[0.4em] text-zinc-700 mb-3">FOLLOW</p>

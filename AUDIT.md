@@ -199,10 +199,9 @@ const token = req.cookies?.admin_token;
 ```
 
 **🔴 CRITICAL — Dev fallback credentials in source code**
-- File: `auth.ts` lines 14, 23, 33
-- The strings `"admin"`, `"primeopp2025"`, and `"primeopp-dev-secret-CHANGE-IN-PRODUCTION"` are committed to source code.
-- Risk: If the repository is ever made public (or leaked), these become the default credentials for any misconfigured deployment.
-- Fix: Remove all fallbacks. In dev, require a `.env` file with a clear error message if missing:
+- Historical finding: fixed by removing development fallbacks and requiring explicit deployment secrets.
+- Risk: If fallback credentials are committed, they become default credentials for misconfigured deployments.
+- Fix pattern: require a `.env` file with a clear error message if missing:
   ```typescript
   function getAdminPassword(): string {
     const val = process.env["ADMIN_PASSWORD"];
@@ -212,8 +211,7 @@ const token = req.cookies?.admin_token;
   ```
 
 **MEDIUM — No token revocation**
-- If an admin JWT is stolen, it is valid for 7 days with no way to invalidate it.
-- Fix: Store a `token_version` integer in the DB per admin user. Include it in the JWT payload. On `requireAdmin`, verify `token_version` matches the DB. Increment on logout/password change to invalidate all existing tokens.
+- Historical finding: fixed by server-side admin sessions with logout revocation and idle/absolute timeouts.
 
 **LOW — No 2FA for admin**
 - TOTP (Google Authenticator) would provide significant protection given the single-account design.
@@ -226,7 +224,7 @@ const token = req.cookies?.admin_token;
 - File: `products.ts` lines 30–62
 - Reproduction: 
   ```bash
-  curl -X POST /api/products -H "Authorization: Bearer <token>" \
+  curl -X POST /api/products -H "x-csrf-token: <csrf-token>" \
     -d '{"type":"pod","title":"<script>alert(1)</script>","price":-99.99}'
   ```
 - Risk: Stored XSS in product titles/descriptions. Negative prices charged to POD provider. Unbounded string lengths bloating DB.
@@ -547,7 +545,7 @@ CREATE INDEX IF NOT EXISTS idx_products_created_at ON products (created_at DESC)
 |---|---|---|
 | 1 | Fix Stripe metadata limit — store pending order in DB before session creation | 3h |
 | 2 | Add Zod validation to POST/PUT `/api/products` | 2h |
-| 3 | Move JWT to httpOnly cookie (or at minimum document the XSS risk) | 4h |
+| 3 | Move admin auth to httpOnly secure cookies with CSRF protection | 4h |
 | 4 | Remove hardcoded fallback credentials from `auth.ts` | 30min |
 | 5 | Add DB indexes (6 CREATE INDEX statements) | 30min |
 | 6 | Make `GET /checkout/session/:id` auth-required or strip PII | 30min |

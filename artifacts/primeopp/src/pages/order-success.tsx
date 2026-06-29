@@ -3,7 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { clearCart } from "@/lib/cart";
-import { verifyCheckoutSession } from "@/lib/api";
+import { fetchProducts, verifyCheckoutSession, type Product } from "@/lib/api";
+import ProductCard from "@/components/ProductCard";
 
 interface SessionData {
   status: string;
@@ -26,6 +27,7 @@ function OrderSuccessPage() {
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [upsells, setUpsells] = useState<Product[]>([]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -52,6 +54,7 @@ function OrderSuccessPage() {
       }
     }
     void fetchSession();
+    fetchProducts().then((products) => setUpsells(products.slice(0, 4))).catch(() => setUpsells([]));
   }, []);
 
   if (loading) {
@@ -134,6 +137,15 @@ function OrderSuccessPage() {
           >
             Continue Shopping
           </a>
+
+          {upsells.length > 0 && (
+            <section className="mt-12">
+              <p className="text-zinc-500 text-[10px] tracking-[0.3em] uppercase mb-4">Post-Purchase Picks</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {upsells.slice(0, 2).map((product) => <ProductCard key={product.id} product={product} />)}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { fetchOrders, updateOrderStatus, isLoggedIn, verifyToken, adminLogout, type Order } from "@/lib/api";
+import { fetchOrders, updateOrderStatus, verifyToken, adminLogout, type Order } from "@/lib/api";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "text-yellow-500 border-yellow-500",
@@ -25,7 +25,6 @@ function AdminOrdersPage() {
 
   useEffect(() => {
     async function checkAuth() {
-      if (!isLoggedIn()) { setLocation("/admin/login"); return; }
       const valid = await verifyToken();
       if (!valid) { setLocation("/admin/login"); return; }
       await loadOrders();
@@ -61,7 +60,7 @@ function AdminOrdersPage() {
   }
 
   function handleLogout() {
-    adminLogout();
+    void adminLogout();
     setLocation("/admin/login");
   }
 
@@ -78,6 +77,7 @@ function AdminOrdersPage() {
           <span className="text-white font-black text-sm tracking-widest uppercase">PRIMEOPP ADMIN</span>
           <nav className="hidden md:flex items-center gap-4">
             <a href="/admin" className="text-xs text-zinc-500 tracking-widest uppercase hover:text-white transition-colors">Products</a>
+            <a href="/admin/dashboard" className="text-xs text-zinc-500 tracking-widest uppercase hover:text-white transition-colors">Dashboard</a>
             <span className="text-xs text-white tracking-widest uppercase border-b border-red-600 pb-0.5">Orders</span>
           </nav>
         </div>

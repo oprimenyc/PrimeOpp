@@ -14,6 +14,8 @@ function ProductCard({ product }: Props) {
   const colors = Array.isArray(product.colors) ? product.colors : [];
   const selectedColor = selectedColorIndex !== null ? colors[selectedColorIndex] : null;
   const displayPrice = selectedColor ? selectedColor.price : Number(product.price ?? 0);
+  const averageRating = Number(product.average_rating ?? 0);
+  const reviewCount = Number(product.review_count ?? 0);
 
   function handleBuyNow() {
     if (product.type === "affiliate" && product.external_link) {
@@ -39,6 +41,8 @@ function ProductCard({ product }: Props) {
           <img
             src={product.thumbnail_url}
             alt={product.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 grayscale group-hover:grayscale-0"
           />
         ) : (
@@ -64,6 +68,13 @@ function ProductCard({ product }: Props) {
             <span className="text-[10px] text-zinc-500 tracking-widest">+${(selectedColor.price - Number(product.price)).toFixed(2)}</span>
           )}
         </div>
+        {reviewCount > 0 && (
+          <p className="text-[10px] text-zinc-500 tracking-widest">
+            <span className="text-red-600">{"★".repeat(Math.round(averageRating))}</span>
+            <span className="text-zinc-700">{"★".repeat(5 - Math.round(averageRating))}</span>
+            {" "}{averageRating.toFixed(1)} ({reviewCount})
+          </p>
+        )}
 
         {/* Color swatches — POD products only */}
         {product.type === "pod" && colors.length > 0 && (

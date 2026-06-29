@@ -27,7 +27,7 @@ This is normal for a new platform. The purpose of this audit is to define what m
 
 ### Current State
 
-**Gap: No RBAC exists.** There is a single role — `admin` — with a single shared credential set (`ADMIN_USERNAME` / `ADMIN_PASSWORD`). Every person with access has identical, unrestricted permissions.
+**Historical gap:** Earlier builds used a single shared admin role. The hardened backend now uses database-backed roles and permission middleware.
 
 ### Required Roles (Gap Analysis)
 
@@ -514,8 +514,8 @@ async function auditedUpdate(
 3. **Known gap:** Item details are stored in Stripe metadata (see Phase 1 Critical #1 — after fix, they'll be in a pre-created pending order, making this easier)
 
 #### Runbook 4: Compromised Admin Credentials
-1. Immediately rotate `ADMIN_PASSWORD` and `JWT_SECRET` in Replit Secrets
-2. Restarting the server invalidates all existing JWTs (since new `JWT_SECRET` is used)
+1. Immediately rotate admin credentials and the session secret in deployment secrets
+2. Revoke active admin sessions in the database
 3. Review audit log for unauthorized actions in the past 7 days
 4. If audit log doesn't exist yet: review `orders` table for any unexpected status changes or deletions
 
