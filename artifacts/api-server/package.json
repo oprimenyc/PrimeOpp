@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development tsx ./src/index.ts",
-    "build": "tsx ./build.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
+  "dev": "NODE_ENV=development tsx ./src/index.ts",
+  "build": "tsx ./build.ts",
+  "typecheck": "tsc -p tsconfig.json --noEmit",
+  "start": "node ./dist/index.cjs"
+}},
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
