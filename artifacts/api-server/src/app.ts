@@ -1,5 +1,4 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -9,12 +8,10 @@ import { randomUUID } from "node:crypto";
 import router from "./routes/index.js";
 
 const app: Express = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+const __dirname = process.cwd();
 const frontendPath = path.resolve(
   __dirname,
-  "../../primeopp/dist/public"
+  "../primeopp/dist/public"
 );
 app.use((req, res, next) => {
   const correlationId = req.headers["x-correlation-id"];
