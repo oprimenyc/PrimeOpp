@@ -8,7 +8,7 @@
   "build": "tsx ./build.ts",
   "typecheck": "tsc -p tsconfig.json --noEmit",
   "start": "node ./dist/index.cjs"
-}},
+},
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",

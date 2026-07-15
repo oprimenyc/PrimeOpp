@@ -1,9 +1,9 @@
-﻿{
+{
     "name":  "workspace",
     "version":  "0.0.0",
     "license":  "MIT",
     "scripts":  {
-                    "preinstall":  "sh -c \u0027rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" \u003e\u00262; exit 1 ;; esac\u0027",
+                    "preinstall": "node -e \"if (!process.env.npm_config_user_agent?.startsWith('pnpm')) { console.error('Use pnpm instead'); process.exit(1) }\"",
                     "build":  "pnpm run typecheck \u0026\u0026 pnpm -r --if-present run build",
                     "typecheck:libs":  "tsc --build",
                     "typecheck":  "pnpm run typecheck:libs \u0026\u0026 pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
@@ -19,3 +19,6 @@
                         },
     "packageManager":  "pnpm@10.0.0"
 }
+
+
+

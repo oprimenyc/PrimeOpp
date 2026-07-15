@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -7,7 +9,13 @@ import { randomUUID } from "node:crypto";
 import router from "./routes/index.js";
 
 const app: Express = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+const frontendPath = path.resolve(
+  __dirname,
+  "../../primeopp/dist/public"
+);
 app.use((req, res, next) => {
   const correlationId = req.headers["x-correlation-id"];
   req.id = typeof correlationId === "string" && correlationId.length <= 100 ? correlationId : randomUUID();
@@ -110,10 +118,19 @@ app.use("/api/products", express.json({ limit: "12mb" }));
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
 
+
 app.use("/api", router);
+
+// Serve React frontend
+app.use(express.static(frontendPath));
+
+app.get("*", (_req: Request, res: Response) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 // ── 404 fallback ──────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
+
   res.status(404).json({ error: "Not found" });
 });
 
