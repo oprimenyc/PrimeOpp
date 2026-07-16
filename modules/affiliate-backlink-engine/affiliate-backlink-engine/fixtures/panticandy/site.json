@@ -1,0 +1,213 @@
+{
+  "site": {
+    "id": "site_panticandy",
+    "name": "PantiCandy",
+    "rootDomain": "panticandy.com",
+    "topics": ["lingerie", "intimate apparel", "affiliate editorial"],
+    "commercialIntent": "affiliate",
+    "preferredOutreachTone": "friendly",
+    "createdAt": 1715000000000
+  },
+  "domain": {
+    "id": "dom_panticandy",
+    "siteProfileId": "site_panticandy",
+    "domain": "panticandy.com",
+    "verification": "DISCOVERED"
+  },
+  "pages": [
+    {
+      "id": "page_panticandy_home",
+      "siteProfileId": "site_panticandy",
+      "url": "https://panticandy.com/",
+      "canonicalUrl": "https://panticandy.com/",
+      "title": "PantiCandy - Lingerie Reviews & Buying Guides",
+      "contentType": "homepage",
+      "topic": "lingerie",
+      "commercialIntent": "commercial_investigation",
+      "indexability": "indexable",
+      "priority": 90,
+      "verification": "DISCOVERED"
+    },
+    {
+      "id": "page_panticandy_best_seamless",
+      "siteProfileId": "site_panticandy",
+      "url": "https://panticandy.com/best-seamless-panties",
+      "canonicalUrl": "https://panticandy.com/best-seamless-panties",
+      "title": "12 Best Seamless Panties (2024 Tested)",
+      "contentType": "listicle",
+      "topic": "seamless panties",
+      "commercialIntent": "commercial_investigation",
+      "targetKeyword": "best seamless panties",
+      "indexability": "indexable",
+      "priority": 80,
+      "verification": "DISCOVERED",
+      "attributes": { "rankingPosition": 12, "contentAgeDays": 420, "contentCompleteness": 0.55 }
+    },
+    {
+      "id": "page_panticandy_lace_guide",
+      "siteProfileId": "site_panticandy",
+      "url": "https://panticandy.com/lace-lingerie-guide",
+      "canonicalUrl": "https://panticandy.com/lace-lingerie-guide",
+      "title": "The Complete Lace Lingerie Guide",
+      "contentType": "guide",
+      "topic": "lace lingerie",
+      "commercialIntent": "informational",
+      "targetKeyword": "lace lingerie guide",
+      "indexability": "indexable",
+      "priority": 70,
+      "verification": "DISCOVERED",
+      "attributes": { "rankingPosition": 8, "contentAgeDays": 200 }
+    },
+    {
+      "id": "page_panticandy_size_calculator",
+      "siteProfileId": "site_panticandy",
+      "url": "https://panticandy.com/size-calculator",
+      "canonicalUrl": "https://panticandy.com/size-calculator",
+      "title": "Lingerie Size Calculator",
+      "contentType": "calculator",
+      "topic": "lingerie sizing",
+      "commercialIntent": "informational",
+      "indexability": "indexable",
+      "priority": 65,
+      "verification": "DISCOVERED"
+    },
+    {
+      "id": "page_panticandy_brand_review_acme",
+      "siteProfileId": "site_panticandy",
+      "url": "https://panticandy.com/brands/acme-review",
+      "canonicalUrl": "https://panticandy.com/brands/acme-review",
+      "title": "Acme Lingerie Brand Review",
+      "contentType": "review",
+      "topic": "acme lingerie",
+      "commercialIntent": "commercial_investigation",
+      "indexability": "indexable",
+      "priority": 60,
+      "verification": "DISCOVERED"
+    },
+    {
+      "id": "page_panticandy_glossary",
+      "siteProfileId": "site_panticandy",
+      "url": "https://panticandy.com/glossary",
+      "canonicalUrl": "https://panticandy.com/glossary",
+      "title": "Lingerie Glossary",
+      "contentType": "glossary",
+      "topic": "lingerie terms",
+      "commercialIntent": "informational",
+      "indexability": "indexable",
+      "priority": 55,
+      "verification": "DISCOVERED"
+    }
+  ],
+  "competitors": [
+    {
+      "id": "comp_competitorone",
+      "siteProfileId": "site_panticandy",
+      "domain": "competitorone.com",
+      "name": "Competitor One",
+      "verification": "DISCOVERED",
+      "relationship": "direct"
+    },
+    {
+      "id": "comp_competitortwo",
+      "siteProfileId": "site_panticandy",
+      "domain": "competitortwo.com",
+      "name": "Competitor Two",
+      "verification": "DISCOVERED",
+      "relationship": "direct"
+    }
+  ],
+  "competitorBacklinks": [
+    {
+      "competitorId": "comp_competitorone",
+      "competitorDomain": "competitorone.com",
+      "backlinks": [
+        {
+          "linkingDomain": "lingerieblog.example",
+          "linkingPageUrl": "https://lingerieblog.example/best-intimate-apparel-resources",
+          "targetUrl": "https://competitorone.com/affiliate-page",
+          "anchorText": "best intimate apparel",
+          "authority": 35
+        },
+        {
+          "linkingDomain": "fashionreview.example",
+          "linkingPageUrl": "https://fashionreview.example/2024-lingerie-guide",
+          "targetUrl": "https://competitorone.com/guide",
+          "anchorText": "lingerie guide",
+          "authority": 42
+        },
+        {
+          "linkingDomain": "styleforum.example",
+          "linkingPageUrl": "https://styleforum.example/thread/lingerie-recommendations",
+          "targetUrl": "https://competitorone.com/recommendations",
+          "anchorText": "recommendations"
+        }
+      ]
+    },
+    {
+      "competitorId": "comp_competitortwo",
+      "competitorDomain": "competitortwo.com",
+      "backlinks": [
+        {
+          "linkingDomain": "lingerieblog.example",
+          "linkingPageUrl": "https://lingerieblog.example/best-intimate-apparel-resources",
+          "targetUrl": "https://competitortwo.com",
+          "anchorText": "competitor two intimate",
+          "authority": 35
+        },
+        {
+          "linkingDomain": "styleforum.example",
+          "linkingPageUrl": "https://styleforum.example/thread/lingerie-recommendations",
+          "targetUrl": "https://competitortwo.com/recommendations",
+          "anchorText": "alt recommendations"
+        },
+        {
+          "linkingDomain": "indiedirectory.example",
+          "linkingPageUrl": "https://indiedirectory.example/submit",
+          "targetUrl": "https://competitortwo.com",
+          "anchorText": "submit your site"
+        }
+      ]
+    }
+  ],
+  "brokenLinks": [
+    {
+      "sourcePageUrl": "https://fashionreview.example/2024-lingerie-guide",
+      "brokenDestinationUrl": "https://oldlingerie.example.org/seamless-panties-faq",
+      "anchorText": "seamless panties FAQ",
+      "httpState": 404,
+      "detectedAt": 1715000000000
+    },
+    {
+      "sourcePageUrl": "https://styleforum.example/thread/lingerie-recommendations",
+      "brokenDestinationUrl": "https://deadauthor.example.net/lingerie-buying-guide",
+      "anchorText": "buying guide",
+      "httpState": 500,
+      "detectedAt": 1714000000000
+    }
+  ],
+  "resourcePages": [
+    {
+      "url": "https://lingerieblog.example/best-intimate-apparel-resources",
+      "title": "Best Intimate Apparel Resources",
+      "snippet": "A curated list of resources for intimate apparel education and reviews."
+    },
+    {
+      "url": "https://fashionreview.example/2024-lingerie-guide",
+      "title": "2024 Lingerie Guide",
+      "snippet": "Educational guide covering lingerie selection and care."
+    }
+  ],
+  "mentions": [
+    {
+      "url": "https://influencerblog.example/post/panticandy-shoutout",
+      "snippet": "I really like what PantiCandy is doing with their lace guide.",
+      "term": "PantiCandy",
+      "hasLink": false
+    }
+  ],
+  "internalLinks": [
+    { "source": "page_panticandy_home", "target": "page_panticandy_best_seamless", "anchor": "best seamless panties" },
+    { "source": "page_panticandy_home", "target": "page_panticandy_lace_guide", "anchor": "lace guide" },
+    { "source": "page_panticandy_lace_guide", "target": "page_panticandy_glossary", "anchor": "glossary" }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "promo-bogo",
+  "type": "BOGO",
+  "description": "Buy one get one free",
+  "stackable": "no",
+  "evidence": []
+}

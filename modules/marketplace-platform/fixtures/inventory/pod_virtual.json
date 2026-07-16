@@ -1,0 +1,22 @@
+{
+  "inventoryId": "inv_pod_1",
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "productId": "prod_pod_shirt_001",
+  "sku": "POD-T-SHIRT",
+  "kind": "virtual_pod",
+  "quantityTotal": 999,
+  "quantityAvailable": 999,
+  "quantityReserved": 0,
+  "quantityAllocated": 0,
+  "quantitySold": 0,
+  "quantityDamaged": 0,
+  "location": {
+    "locationId": "loc_supplier",
+    "name": "POD Supplier",
+    "region": "US"
+  },
+  "supplierRef": "supplier_pod_1",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}

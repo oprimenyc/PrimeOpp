@@ -1,0 +1,109 @@
+{
+  "site": {
+    "id": "site_generic",
+    "name": "Generic Affiliate Site",
+    "rootDomain": "genericaffiliate.example",
+    "topics": ["kitchen appliances", "affiliate reviews"],
+    "commercialIntent": "affiliate",
+    "createdAt": 1715000000000
+  },
+  "domain": {
+    "id": "dom_generic",
+    "siteProfileId": "site_generic",
+    "domain": "genericaffiliate.example",
+    "verification": "DISCOVERED"
+  },
+  "pages": [
+    {
+      "id": "page_generic_home",
+      "siteProfileId": "site_generic",
+      "url": "https://genericaffiliate.example/",
+      "canonicalUrl": "https://genericaffiliate.example/",
+      "title": "Kitchen Appliance Reviews",
+      "contentType": "homepage",
+      "commercialIntent": "commercial_investigation",
+      "indexability": "indexable",
+      "priority": 90,
+      "verification": "DISCOVERED"
+    },
+    {
+      "id": "page_generic_espresso",
+      "siteProfileId": "site_generic",
+      "url": "https://genericaffiliate.example/best-espresso-machines",
+      "canonicalUrl": "https://genericaffiliate.example/best-espresso-machines",
+      "title": "Best Espresso Machines 2024",
+      "contentType": "listicle",
+      "topic": "espresso machines",
+      "commercialIntent": "commercial_investigation",
+      "targetKeyword": "best espresso machines",
+      "indexability": "indexable",
+      "priority": 80,
+      "verification": "DISCOVERED",
+      "attributes": { "rankingPosition": 11 }
+    },
+    {
+      "id": "page_generic_coffee_grinder_guide",
+      "siteProfileId": "site_generic",
+      "url": "https://genericaffiliate.example/coffee-grinder-guide",
+      "canonicalUrl": "https://genericaffiliate.example/coffee-grinder-guide",
+      "title": "Coffee Grinder Buying Guide",
+      "contentType": "guide",
+      "topic": "coffee grinders",
+      "commercialIntent": "informational",
+      "indexability": "indexable",
+      "priority": 60,
+      "verification": "DISCOVERED"
+    }
+  ],
+  "competitors": [
+    {
+      "id": "comp_espressoblog",
+      "siteProfileId": "site_generic",
+      "domain": "espressoblog.example",
+      "verification": "DISCOVERED",
+      "relationship": "direct"
+    }
+  ],
+  "competitorBacklinks": [
+    {
+      "competitorId": "comp_espressoblog",
+      "competitorDomain": "espressoblog.example",
+      "backlinks": [
+        {
+          "linkingDomain": "coffeeworld.example",
+          "linkingPageUrl": "https://coffeeworld.example/resources",
+          "targetUrl": "https://espressoblog.example",
+          "anchorText": "espresso blog",
+          "authority": 40
+        }
+      ]
+    }
+  ],
+  "brokenLinks": [
+    {
+      "sourcePageUrl": "https://coffeeworld.example/resources",
+      "brokenDestinationUrl": "https://deadcoffee.example.org/grinder-faq",
+      "anchorText": "grinder FAQ",
+      "httpState": 404,
+      "detectedAt": 1714000000000
+    }
+  ],
+  "resourcePages": [
+    {
+      "url": "https://coffeeworld.example/resources",
+      "title": "Coffee Resources Directory",
+      "snippet": "Directory of coffee resources, blogs, and reviews."
+    }
+  ],
+  "mentions": [
+    {
+      "url": "https://coffeeblog.example/post/generic-shoutout",
+      "snippet": "Generic Affiliate Site has solid espresso coverage.",
+      "term": "Generic Affiliate Site",
+      "hasLink": false
+    }
+  ],
+  "internalLinks": [
+    { "source": "page_generic_home", "target": "page_generic_espresso", "anchor": "best espresso machines" }
+  ]
+}

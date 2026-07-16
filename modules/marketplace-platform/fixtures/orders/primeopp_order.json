@@ -1,0 +1,51 @@
+{
+  "tenantId": "tenant_demo",
+  "channelId": "primeopp-marketplace",
+  "buyer": {
+    "buyerId": "buyer_demo",
+    "buyerType": "registered"
+  },
+  "seller": {
+    "sellerId": "seller_demo",
+    "organizationId": "org_demo"
+  },
+  "listing": {
+    "listingId": "list_demo_sneaker",
+    "channelId": "primeopp-marketplace"
+  },
+  "lines": [
+    {
+      "lineId": "l1",
+      "listingId": "list_demo_sneaker",
+      "productId": "prod_aj1_001",
+      "inventoryId": "inv_unique_1",
+      "quantity": 1,
+      "unitPrice": "450.00",
+      "lineTotal": "450.00"
+    }
+  ],
+  "price": {
+    "subtotal": "450.00",
+    "shipping": "15.00",
+    "tax": "0.00",
+    "discount": "0.00",
+    "total": "465.00"
+  },
+  "commission": {
+    "commissionId": "c1",
+    "policyVersion": "2026.01.launch",
+    "amount": "0.00"
+  },
+  "payment": {
+    "paymentRef": "pay1",
+    "provider": "test",
+    "authorizedAmount": "465.00",
+    "method": "card"
+  },
+  "fulfillment": {
+    "fulfillmentId": "f1",
+    "kind": "ship",
+    "status": "pending"
+  },
+  "idempotencyKey": "idem_primeopp_001"
+}

@@ -1,0 +1,61 @@
+{
+  "at": "2026-07-15T18:18:50.567Z",
+  "allOk": true,
+  "results": [
+    {
+      "name": "typecheck",
+      "ok": true,
+      "durationMs": 2044
+    },
+    {
+      "name": "build",
+      "ok": true,
+      "durationMs": 2311
+    },
+    {
+      "name": "tests",
+      "ok": true,
+      "durationMs": 6577
+    },
+    {
+      "name": "example:panticandy",
+      "ok": true,
+      "durationMs": 646
+    },
+    {
+      "name": "example:vital",
+      "ok": true,
+      "durationMs": 636
+    },
+    {
+      "name": "example:generic",
+      "ok": true,
+      "durationMs": 644
+    },
+    {
+      "name": "cli:help",
+      "ok": true,
+      "durationMs": 633
+    },
+    {
+      "name": "cli:site-import",
+      "ok": true,
+      "durationMs": 652
+    },
+    {
+      "name": "cli:broken-links",
+      "ok": true,
+      "durationMs": 662
+    },
+    {
+      "name": "cli:internal-links",
+      "ok": true,
+      "durationMs": 663
+    },
+    {
+      "name": "cli:evidence-verify",
+      "ok": true,
+      "durationMs": 669
+    }
+  ]
+}

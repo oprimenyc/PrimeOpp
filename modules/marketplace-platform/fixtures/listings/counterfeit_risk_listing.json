@@ -1,0 +1,40 @@
+{
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "sellerId": "seller_demo",
+  "productId": "prod_counterfeit_risk",
+  "inventoryId": "inv_cf_1",
+  "title": "Replica Air Jordan 1 — 1:1 Mirror Quality",
+  "description": "1:1 replica Air Jordan 1. Looks just like the real thing.",
+  "condition": "new",
+  "price": {
+    "amount": "120.00",
+    "currency": "USD"
+  },
+  "quantity": 1,
+  "shippingPolicy": {
+    "shippingPolicyId": "pol_cf",
+    "handlingTimeDays": 2,
+    "localPickup": false,
+    "freeShipping": false
+  },
+  "returnPolicy": {
+    "returnPolicyId": "ret_cf",
+    "returnsAccepted": false,
+    "returnWindowDays": 0,
+    "restockingFeePercent": 0,
+    "returnShippingPaidBy": "buyer"
+  },
+  "authenticity": {
+    "verifiedAuthentic": false
+  },
+  "destinations": [
+    {
+      "channelId": "primeopp-marketplace",
+      "enabled": true,
+      "explicitlySelected": false,
+      "primeOppMarketplace": true,
+      "selectedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}

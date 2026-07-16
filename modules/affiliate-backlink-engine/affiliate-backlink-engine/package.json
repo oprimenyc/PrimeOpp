@@ -1,0 +1,34 @@
+{
+  "name": "affiliate-backlink-engine",
+  "version": "1.0.0",
+  "description": "Provider-agnostic backlink intelligence and campaign-planning engine for SEO authority growth",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "backlink-engine": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cli": "tsx src/cli/index.ts",
+    "example:panticandy": "tsx examples/panticandy-workflow.ts",
+    "example:vital": "tsx examples/vital-workflow.ts",
+    "example:generic": "tsx examples/generic-workflow.ts",
+    "smoke": "tsx scripts/smoke.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

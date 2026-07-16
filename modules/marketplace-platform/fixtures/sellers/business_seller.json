@@ -1,0 +1,14 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "SoleStar Sneakers LLC",
+  "email": "ops@solestar.test",
+  "sellerType": "business",
+  "timezone": "America/New_York",
+  "locale": "en-US",
+  "defaultAlsoListOnPrimeOppMarketplace": true,
+  "defaultChannels": [
+    "primeopp-marketplace",
+    "test-ebay",
+    "test-goat"
+  ]
+}

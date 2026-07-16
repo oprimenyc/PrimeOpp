@@ -1,0 +1,21 @@
+{
+  "inventoryId": "inv_ent_loc_a",
+  "tenantId": "tenant_enterprise",
+  "organizationId": "org_ent",
+  "productId": "prod_ent_001",
+  "sku": "ENT-SKU",
+  "kind": "physical",
+  "quantityTotal": 10,
+  "quantityAvailable": 10,
+  "quantityReserved": 0,
+  "quantityAllocated": 0,
+  "quantitySold": 0,
+  "quantityDamaged": 0,
+  "location": {
+    "locationId": "loc_ent_east",
+    "name": "East Warehouse",
+    "region": "US-NE"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}

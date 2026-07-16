@@ -1,0 +1,47 @@
+{
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "sellerId": "seller_demo",
+  "productId": "prod_vinyl_001",
+  "inventoryId": "inv_vinyl_1",
+  "title": "Beatles White Album Original Pressing",
+  "description": "Original pressing Beatles White Album, low serial number.",
+  "condition": "used_very_good",
+  "price": {
+    "amount": "1200.00",
+    "currency": "USD"
+  },
+  "quantity": 1,
+  "shippingPolicy": {
+    "shippingPolicyId": "pol_vinyl",
+    "handlingTimeDays": 3,
+    "localPickup": false,
+    "freeShipping": false
+  },
+  "returnPolicy": {
+    "returnPolicyId": "ret_vinyl",
+    "returnsAccepted": false,
+    "returnWindowDays": 0,
+    "restockingFeePercent": 0,
+    "returnShippingPaidBy": "buyer"
+  },
+  "authenticity": {
+    "verifiedAuthentic": false
+  },
+  "destinations": [
+    {
+      "channelId": "primeopp-marketplace",
+      "enabled": false,
+      "explicitlySelected": true,
+      "primeOppMarketplace": true,
+      "selectedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "channelId": "test-ebay",
+      "enabled": true,
+      "explicitlySelected": true,
+      "primeOppMarketplace": false,
+      "selectedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}

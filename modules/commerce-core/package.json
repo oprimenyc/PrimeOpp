@@ -1,0 +1,33 @@
+{
+  "name": "primeopp-commerce-core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PrimeOpp Commerce Core — channel-neutral, business-model-neutral commerce foundation for product intelligence, inventory, pricing, profitability and marketplace-ready listings.",
+  "license": "Apache-2.0",
+  "author": "PrimeOpp / VERIDIAN",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "clean": "node scripts/clean.ts",
+    "build": "npm run typecheck",
+    "typecheck": "node scripts/typecheck-all.ts",
+    "lint": "node scripts/lint.ts",
+    "test": "node --test \"packages/*/tests/**/*.test.ts\"",
+    "test:unit": "node --test \"packages/*/tests/**/*.test.ts\"",
+    "verify": "node scripts/verify.ts",
+    "verify:proofs": "node scripts/run-proofs.ts",
+    "demo": "node packages/cli/src/index.ts demo",
+    "doctor": "node packages/cli/src/index.ts doctor",
+    "package": "node scripts/package.ts",
+    "cleanroom": "node scripts/cleanroom-verify.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.4.5"
+  }
+}

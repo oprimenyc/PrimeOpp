@@ -1,0 +1,9 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "Good Cause Thrift",
+  "email": "donations@goodcause.test",
+  "sellerType": "nonprofit",
+  "timezone": "America/New_York",
+  "locale": "en-US",
+  "defaultAlsoListOnPrimeOppMarketplace": true
+}

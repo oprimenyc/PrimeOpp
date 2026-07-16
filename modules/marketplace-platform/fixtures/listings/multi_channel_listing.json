@@ -1,0 +1,54 @@
+{
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "sellerId": "seller_demo",
+  "productId": "prod_laptop_001",
+  "inventoryId": "inv_multi_1",
+  "title": "ThinkPad X1 Carbon Gen 10 i7 16GB 512GB",
+  "description": "Excellent condition ThinkPad X1 Carbon Gen 10. Light business use.",
+  "condition": "used_very_good",
+  "price": {
+    "amount": "850.00",
+    "currency": "USD"
+  },
+  "quantity": 5,
+  "shippingPolicy": {
+    "shippingPolicyId": "pol_laptop",
+    "handlingTimeDays": 1,
+    "localPickup": false,
+    "freeShipping": true
+  },
+  "returnPolicy": {
+    "returnPolicyId": "ret_laptop",
+    "returnsAccepted": true,
+    "returnWindowDays": 30,
+    "restockingFeePercent": 5,
+    "returnShippingPaidBy": "buyer"
+  },
+  "authenticity": {
+    "verifiedAuthentic": false
+  },
+  "destinations": [
+    {
+      "channelId": "primeopp-marketplace",
+      "enabled": true,
+      "explicitlySelected": true,
+      "primeOppMarketplace": true,
+      "selectedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "channelId": "test-ebay",
+      "enabled": true,
+      "explicitlySelected": true,
+      "primeOppMarketplace": false,
+      "selectedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "channelId": "test-amazon",
+      "enabled": true,
+      "explicitlySelected": true,
+      "primeOppMarketplace": false,
+      "selectedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}

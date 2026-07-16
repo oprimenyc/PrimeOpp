@@ -1,0 +1,24 @@
+{
+  "name": "@primeopp-marketplace/inventory-sync",
+  "version": "1.0.0",
+  "description": "PrimeOpp Marketplace Platform — inventory-sync package.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@primeopp-marketplace/contracts": "1.0.0",
+    "@primeopp-marketplace/evidence": "1.0.0",
+    "@primeopp-marketplace/observability": "1.0.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "node --test --test-reporter=spec \"dist-test/**/*.test.js\""
+  }
+}

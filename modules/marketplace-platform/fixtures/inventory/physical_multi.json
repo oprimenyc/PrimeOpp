@@ -1,0 +1,21 @@
+{
+  "inventoryId": "inv_multi_1",
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "productId": "prod_laptop_001",
+  "sku": "TPX1C10",
+  "kind": "physical",
+  "quantityTotal": 5,
+  "quantityAvailable": 5,
+  "quantityReserved": 0,
+  "quantityAllocated": 0,
+  "quantitySold": 0,
+  "quantityDamaged": 0,
+  "location": {
+    "locationId": "loc_demo_1",
+    "name": "Main Warehouse",
+    "region": "US"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}

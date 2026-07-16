@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://primeopp.dev/schemas/external-order-event.json",
+  "title": "ExternalOrderEvent",
+  "type": "object",
+  "required": [
+    "eventId",
+    "tenantId",
+    "channelId",
+    "channelOrderId",
+    "sellerChannelAccountId",
+    "buyerRef",
+    "listingRef",
+    "quantity",
+    "unitPrice",
+    "timestamp",
+    "signature",
+    "payload",
+    "idempotencyKey"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "channelId": {
+      "type": "string"
+    },
+    "channelOrderId": {
+      "type": "string"
+    },
+    "sellerChannelAccountId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "buyerRef": {
+      "type": "object"
+    },
+    "listingRef": {
+      "type": "object"
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "unitPrice": {
+      "type": "object",
+      "required": [
+        "amount",
+        "currency"
+      ],
+      "properties": {
+        "amount": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "signature": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload": {
+      "type": "object"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": true
+}

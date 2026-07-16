@@ -1,0 +1,249 @@
+{
+  "timestamp": "2026-07-14T16:25:39.197Z",
+  "totalChecks": 30,
+  "passed": 30,
+  "failed": 0,
+  "overallPassed": true,
+  "results": [
+    {
+      "name": "clean_build",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "error": ""
+      }
+    },
+    {
+      "name": "typecheck",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "error": ""
+      }
+    },
+    {
+      "name": "lint",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "error": ""
+      }
+    },
+    {
+      "name": "tests",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "error": "All tests registered.\n✔ schemas: all 12 schemas are valid JSON Schema objects (2.604273ms)\n✔ schemas: validate accepts a valid seller (0.445553ms)\n✔ schemas: validate rejects listing missing required fields (0.163838ms)\n✔ channel registry: PrimeOpp Marketplace manifest is first-class (0.106453ms)\n✔ channel registry: 18 test-* adapters are labeled testOnly (0.169212ms)\n✔ tenant config: cross-tenant access is denied (0.097507ms)\n✔ tenant config: same-tenant access is allowed (0.090171ms)\n✔ tenant config: role permissions are enforced (0.106369ms)\n✔ Workflow A: Canonical Listing — create, validate, preview, approve, publish locally (2.506922ms)\n✔ Workflow B: PrimeOpp Visible Default — seller sees channel, leaves enabled, evidence records consent (0.79303ms)\n✔ Workflow C: Seller Opt-Out — seller disables PrimeOpp, listing publishes to other channels only (0.609979ms)\n✔ Workflow D: Multi-Channel Cross-Listing — transform for 3 channels, publish, verify, handle partial failure (0.839827ms)\n✔ Workflow E: External Channel Sale — signed event, allocate, end competing listings, no oversell (1.128384ms)\n✔ Workflow F: Simultaneous Sale — same unique item sold on two channels; exactly one succeeds (0.360714ms)\n✔ Workflow G: PrimeOpp Marketplace Offer — buyer creates, seller counters, buyer accepts, order created (0.250501ms)\n✔ Workflow H: Commission Promotion — grand-opening zero-fee policy applies; normal fee shown as reference (0.256467ms)\n✔ Workflow I: Discounted Commission — seller receives reduced launch rate (0.083028ms)\n✔ Workflow J: Shipping Handoff — order paid, rate request, fake label, tracking stored (0.593543ms)\n✔ Workflow K: Local Pickup — buyer selects pickup, safe location, pickup code, completion (0.22779ms)\n✔ Workflow L: Return — buyer requests, eligibility checked, approved, inventory updated (0.240139ms)\n✔ Workflow M: Counterfeit Risk — listing triggers authenticity risk, publication paused, human review (0.279828ms)\n✔ Workflow N: Prohibited Product — seller attempts prohibited listing, validation rejects (0.300183ms)\n✔ Workflow O: Consignment — consignor ownership preserved, sale completes, split calculated (0.093022ms)\n✔ Workflow P: POD Listing — virtual inventory, production cost, seller margin (0.417461ms)\n✔ Workflow Q: Dropship Listing — supplier stock stale risk (0.424452ms)\n✔ Workflow R: Affiliate Product — external offer, no inventory allocation, disclosure present (0.281391ms)\n✔ Workflow S: Enterprise Multi-Location — inventory at two locations, sale allocates correctly (0.192391ms)\n✔ Workflow T: Cross-Tenant Attack — seller from tenant A attempts to modify tenant B listing (0.109401ms)\n✔ Workflow U: Browser-Assisted Channel — adapter declares browser requirement (0.43776ms)\n✔ Workflow V: AMOS Job — approved PrimeOpp listing + seller consent + structured job (0.222462ms)\n✔ listing state machine: DRAFT -> READY -> APPROVED -> PUBLISHING -> ACTIVE (0.110549ms)\n✔ listing state machine: invalid transitions are rejected (0.046244ms)\n✔ listing validation: visible PrimeOpp default requires destinations list (0.072481ms)\n✔ offer engine: offer below floor is rejected (0.047672ms)\n✔ negotiation engine: auto-accept above threshold (2.659149ms)\n✔ moderation: prohibited keyword rejected (0.130023ms)\n✔ moderation: counterfeit signal flagged for human review (0.06325ms)\n✔ messaging: off-platform payment request flagged (0.454473ms)\n✔ messaging: personal contact disclosure redacted (0.329192ms)\n✔ messaging: phishing detected (0.104939ms)\n✔ seo: no keyword stuffing violation when below threshold (0.598019ms)\n✔ seo: false condition claim detected (0.142943ms)\n✔ adapter conformance: PrimeOpp Marketplace adapter passes conformance tests (0.427923ms)\n✔ adapter conformance: test-ebay adapter passes conformance tests (0.216333ms)\n✔ external order signature: valid signature verifies (0.11769ms)\n✔ external order ingestion: duplicate event rejected (0.2368ms)\n✔ inventory: release allocation restores availability (0.154828ms)\n✔ commission: category override applies (0.08794ms)\n✔ settlement: seller proceeds calculated correctly (0.213653ms)\n✔ dispute: high-impact dispute requires human review (0.152085ms)\n✔ return: counterfeit_concern is high risk (0.060453ms)\n✔ prohibited products: 22 categories defined (0.05151ms)\n✔ channel registry: 18 total channels (1 primeopp + 17 test) (0.026798ms)\n✔ order engine: state machine rejects invalid transitions (0.168663ms)\nℹ tests 54\nℹ suites 0\nℹ pass 54\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 194.150491\n"
+      }
+    },
+    {
+      "name": "json_schema_validation",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "schemaCount": 12
+      }
+    },
+    {
+      "name": "package_export_validation",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "missing": []
+      }
+    },
+    {
+      "name": "canonical_listing_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "visible_primeopp_default_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "seller_opt_out_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "multi_channel_transformation_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "external_order_ingestion_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "simultaneous_sale_oversell_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "primeopp_marketplace_offer_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "commission_promotion_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "discounted_commission_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "shipping_handoff_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "local_pickup_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "return_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "counterfeit_risk_pause_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "prohibited_product_rejection_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "consignment_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "pod_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "dropship_stale_stock_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "affiliate_separation_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "enterprise_multi_location_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "tenant_isolation_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "browser_operator_handoff_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "amos_job_proof",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "note": "covered by test suite"
+      }
+    },
+    {
+      "name": "documentation_link_validation",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "missing": []
+      }
+    },
+    {
+      "name": "zip_content_validation",
+      "passed": true,
+      "details": {
+        "passed": true,
+        "scriptPath": "/home/z/my-project/download/primeopp-marketplace-platform/scripts/package-zip.js"
+      }
+    }
+  ]
+}

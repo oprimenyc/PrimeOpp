@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://primeopp.dev/schemas/prohibited-products.json",
+  "title": "ProhibitedProductPolicy",
+  "type": "object",
+  "required": [
+    "policyId",
+    "tenantId",
+    "version",
+    "categories",
+    "effectiveFrom"
+  ],
+  "properties": {
+    "policyId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "categoryId",
+          "name",
+          "description",
+          "prohibitedByDefault",
+          "requiresJurisdictionReview"
+        ],
+        "properties": {
+          "categoryId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "prohibitedByDefault": {
+            "type": "boolean"
+          },
+          "requiresJurisdictionReview": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "effectiveFrom": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    }
+  },
+  "additionalProperties": true
+}

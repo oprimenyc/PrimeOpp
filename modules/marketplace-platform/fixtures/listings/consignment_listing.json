@@ -1,0 +1,44 @@
+{
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "sellerId": "seller_demo",
+  "productId": "prod_consignment_watch",
+  "inventoryId": "inv_consignment_1",
+  "title": "Vintage Rolex Datejust — Consignment",
+  "description": "Vintage Rolex Datejust, consigned by original owner.",
+  "condition": "used_good",
+  "price": {
+    "amount": "5500.00",
+    "currency": "USD"
+  },
+  "quantity": 1,
+  "shippingPolicy": {
+    "shippingPolicyId": "pol_watch",
+    "handlingTimeDays": 3,
+    "localPickup": false,
+    "freeShipping": false
+  },
+  "returnPolicy": {
+    "returnPolicyId": "ret_watch",
+    "returnsAccepted": true,
+    "returnWindowDays": 7,
+    "restockingFeePercent": 0,
+    "returnShippingPaidBy": "buyer"
+  },
+  "authenticity": {
+    "verifiedAuthentic": true,
+    "verificationMethod": "third_party",
+    "disclosures": [
+      "Authenticated by WGS"
+    ]
+  },
+  "destinations": [
+    {
+      "channelId": "primeopp-marketplace",
+      "enabled": true,
+      "explicitlySelected": false,
+      "primeOppMarketplace": true,
+      "selectedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}

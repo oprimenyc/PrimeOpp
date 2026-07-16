@@ -1,0 +1,6 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "TA Buyer",
+  "email": "tab@buyer.test",
+  "buyerType": "registered"
+}

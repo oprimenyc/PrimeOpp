@@ -1,0 +1,56 @@
+{
+  "name": "@primeopp-marketplace/sdk",
+  "version": "1.0.0",
+  "description": "PrimeOpp Marketplace Platform — sdk package.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@primeopp-marketplace/contracts": "1.0.0",
+    "@primeopp-marketplace/schemas": "1.0.0",
+    "@primeopp-marketplace/seller": "1.0.0",
+    "@primeopp-marketplace/buyer": "1.0.0",
+    "@primeopp-marketplace/canonical-listing": "1.0.0",
+    "@primeopp-marketplace/channel-registry": "1.0.0",
+    "@primeopp-marketplace/listing-transformer": "1.0.0",
+    "@primeopp-marketplace/listing-publisher": "1.0.0",
+    "@primeopp-marketplace/listing-sync": "1.0.0",
+    "@primeopp-marketplace/inventory-sync": "1.0.0",
+    "@primeopp-marketplace/offer-engine": "1.0.0",
+    "@primeopp-marketplace/negotiation-engine": "1.0.0",
+    "@primeopp-marketplace/order-engine": "1.0.0",
+    "@primeopp-marketplace/fulfillment-contracts": "1.0.0",
+    "@primeopp-marketplace/shipping-contracts": "1.0.0",
+    "@primeopp-marketplace/commission-engine": "1.0.0",
+    "@primeopp-marketplace/settlement-contracts": "1.0.0",
+    "@primeopp-marketplace/returns": "1.0.0",
+    "@primeopp-marketplace/disputes": "1.0.0",
+    "@primeopp-marketplace/messaging": "1.0.0",
+    "@primeopp-marketplace/trust-safety": "1.0.0",
+    "@primeopp-marketplace/moderation": "1.0.0",
+    "@primeopp-marketplace/search-contracts": "1.0.0",
+    "@primeopp-marketplace/seo": "1.0.0",
+    "@primeopp-marketplace/affiliate-contracts": "1.0.0",
+    "@primeopp-marketplace/amos-contracts": "1.0.0",
+    "@primeopp-marketplace/evidence": "1.0.0",
+    "@primeopp-marketplace/observability": "1.0.0",
+    "@primeopp-marketplace/tenant-config": "1.0.0",
+    "@primeopp-marketplace/adapter-sdk": "1.0.0",
+    "@primeopp-marketplace/adapter-testkit": "1.0.0",
+    "@primeopp-marketplace/primeopp-marketplace": "1.0.0",
+    "@primeopp-marketplace/test-ebay": "1.0.0",
+    "@primeopp-marketplace/test-amazon": "1.0.0",
+    "@primeopp-marketplace/test-facebook-marketplace": "1.0.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "node --test --test-reporter=spec \"dist-test/**/*.test.js\""
+  }
+}

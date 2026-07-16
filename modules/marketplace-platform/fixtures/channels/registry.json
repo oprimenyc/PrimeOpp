@@ -1,0 +1,100 @@
+[
+  {
+    "channelId": "primeopp-marketplace",
+    "name": "PrimeOpp Marketplace",
+    "testOnly": false
+  },
+  {
+    "channelId": "test-ebay",
+    "name": "eBay (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-amazon",
+    "name": "Amazon (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-walmart",
+    "name": "Walmart (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-facebook-marketplace",
+    "name": "Facebook Marketplace (TEST)",
+    "testOnly": true,
+    "browserRequired": true
+  },
+  {
+    "channelId": "test-offerup",
+    "name": "OfferUp (TEST)",
+    "testOnly": true,
+    "browserRequired": true
+  },
+  {
+    "channelId": "test-depop",
+    "name": "Depop (TEST)",
+    "testOnly": true,
+    "browserRequired": true
+  },
+  {
+    "channelId": "test-poshmark",
+    "name": "Poshmark (TEST)",
+    "testOnly": true,
+    "browserRequired": true
+  },
+  {
+    "channelId": "test-mercari",
+    "name": "Mercari (TEST)",
+    "testOnly": true,
+    "browserRequired": true
+  },
+  {
+    "channelId": "test-etsy",
+    "name": "Etsy (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-goat",
+    "name": "GOAT (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-stockx",
+    "name": "StockX (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-alias",
+    "name": "Alias (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-flight-club",
+    "name": "Flight Club (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-stadium-goods",
+    "name": "Stadium Goods (TEST)",
+    "testOnly": true
+  },
+  {
+    "channelId": "test-grailed",
+    "name": "Grailed (TEST)",
+    "testOnly": true,
+    "browserRequired": true
+  },
+  {
+    "channelId": "test-whatnot",
+    "name": "Whatnot (TEST)",
+    "testOnly": true,
+    "browserRequired": true
+  },
+  {
+    "channelId": "test-craigslist",
+    "name": "Craigslist (TEST)",
+    "testOnly": true,
+    "browserRequired": true
+  }
+]

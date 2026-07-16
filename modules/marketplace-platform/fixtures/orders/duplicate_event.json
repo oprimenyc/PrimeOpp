@@ -1,0 +1,24 @@
+{
+  "eventId": "evt_ext_001_dup",
+  "tenantId": "tenant_demo",
+  "channelId": "test-ebay",
+  "channelOrderId": "ebay_order_12345",
+  "sellerChannelAccountId": "sca_demo_ebay",
+  "buyerRef": {
+    "buyerId": "buyer_ebay_1",
+    "buyerType": "registered"
+  },
+  "listingRef": {
+    "listingId": "list_demo_sneaker",
+    "channelId": "test-ebay",
+    "channelListingId": "ebay_list_001"
+  },
+  "quantity": 1,
+  "unitPrice": "440.00",
+  "timestamp": "2026-01-15T10:30:00.000Z",
+  "signature": "",
+  "payload": {
+    "source": "ebay"
+  },
+  "idempotencyKey": "idem_ebay_001"
+}

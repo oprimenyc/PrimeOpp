@@ -1,0 +1,7 @@
+{
+  "tenantId": "tenant_demo",
+  "kind": "counterfeit_allegation",
+  "openedBy": "buyer_demo",
+  "openedAgainst": "seller_demo",
+  "orderId": "order_demo_2"
+}

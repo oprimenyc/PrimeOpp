@@ -1,0 +1,14 @@
+{
+  "id": "rule-high-score",
+  "tenantId": "tenant:public",
+  "name": "High score deals",
+  "types": [
+    "new-deal"
+  ],
+  "channels": [
+    "discord",
+    "website"
+  ],
+  "mode": "immediate",
+  "minScore": 70
+}

@@ -1,0 +1,7 @@
+{
+  "tenantId": "tenant_demo",
+  "kind": "item_not_received",
+  "openedBy": "buyer_demo",
+  "openedAgainst": "seller_demo",
+  "orderId": "order_demo_1"
+}

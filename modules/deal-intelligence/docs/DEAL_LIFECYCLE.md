@@ -1,0 +1,33 @@
+# Deal Lifecycle
+
+16 lifecycle steps: DISCOVER, NORMALIZE, MATCH_PRODUCT,
+CALCULATE_EFFECTIVE_PRICE, VALIDATE_PROMOTION, CHECK_HISTORY,
+CHECK_AVAILABILITY, SCORE, CHECK_AFFILIATE, MODERATE, APPROVE,
+DISTRIBUTE, RECHECK, UPDATE, EXPIRE, ARCHIVE.
+
+Terminal states: PUBLISHED, REJECTED, DEAD, EXPIRED, FAILED, ARCHIVED.
+Every deal has a terminal state. No silent disappearance.
+
+```mermaid
+stateDiagram-v2
+  [*] --> DISCOVERED
+  DISCOVERED --> VALIDATING
+  VALIDATING --> VERIFIED: sufficient evidence
+  VALIDATING --> VERIFIED_WITH_CONDITIONS: membership/login required
+  VALIDATING --> NEEDS_REVIEW: missing evidence
+  VALIDATING --> REJECTED: invalid
+  VALIDATING --> DEAD: out of stock
+  VALIDATING --> EXPIRED: expired
+  VALIDATING --> BLOCKED: prohibited
+  VERIFIED --> PUBLISHED
+  VERIFIED_WITH_CONDITIONS --> PUBLISHED
+  NEEDS_REVIEW --> VERIFIED
+  NEEDS_REVIEW --> REJECTED
+  PUBLISHED --> STALE: recheck finds change
+  STALE --> DEAD: out of stock
+  STALE --> EXPIRED: expired
+  STALE --> PUBLISHED: still valid
+  DEAD --> ARCHIVED
+  EXPIRED --> ARCHIVED
+  REJECTED --> ARCHIVED
+```

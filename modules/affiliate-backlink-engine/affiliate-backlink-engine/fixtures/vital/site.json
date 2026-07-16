@@ -1,0 +1,145 @@
+{
+  "site": {
+    "id": "site_vitalcore",
+    "name": "vITAL Core",
+    "rootDomain": "vitalcore.example",
+    "topics": ["wellness teas", "functional beverages", "commerce"],
+    "commercialIntent": "ecommerce",
+    "preferredOutreachTone": "formal",
+    "createdAt": 1715000000000
+  },
+  "domain": {
+    "id": "dom_vitalcore",
+    "siteProfileId": "site_vitalcore",
+    "domain": "vitalcore.example",
+    "verification": "DISCOVERED"
+  },
+  "pages": [
+    {
+      "id": "page_vital_home",
+      "siteProfileId": "site_vitalcore",
+      "url": "https://vitalcore.example/",
+      "canonicalUrl": "https://vitalcore.example/",
+      "title": "vITAL Core - Functional Wellness Teas",
+      "contentType": "homepage",
+      "topic": "wellness teas",
+      "commercialIntent": "navigational",
+      "indexability": "indexable",
+      "priority": 95,
+      "verification": "DISCOVERED"
+    },
+    {
+      "id": "page_vital_matcha_guide",
+      "siteProfileId": "site_vitalcore",
+      "url": "https://vitalcore.example/guides/matcha-buying-guide",
+      "canonicalUrl": "https://vitalcore.example/guides/matcha-buying-guide",
+      "title": "Matcha Buying Guide",
+      "contentType": "guide",
+      "topic": "matcha",
+      "commercialIntent": "commercial_investigation",
+      "targetKeyword": "matcha buying guide",
+      "indexability": "indexable",
+      "priority": 85,
+      "verification": "DISCOVERED",
+      "attributes": { "rankingPosition": 14 }
+    },
+    {
+      "id": "page_vital_research",
+      "siteProfileId": "site_vitalcore",
+      "url": "https://vitalcore.example/research/caffeine-study",
+      "canonicalUrl": "https://vitalcore.example/research/caffeine-study",
+      "title": "Caffeine in Functional Teas: Original Research",
+      "contentType": "article",
+      "topic": "caffeine research",
+      "commercialIntent": "informational",
+      "indexability": "indexable",
+      "priority": 75,
+      "verification": "DISCOVERED"
+    },
+    {
+      "id": "page_vital_glossary",
+      "siteProfileId": "site_vitalcore",
+      "url": "https://vitalcore.example/glossary",
+      "canonicalUrl": "https://vitalcore.example/glossary",
+      "title": "Wellness Tea Glossary",
+      "contentType": "glossary",
+      "topic": "tea terms",
+      "commercialIntent": "informational",
+      "indexability": "indexable",
+      "priority": 50,
+      "verification": "DISCOVERED"
+    },
+    {
+      "id": "page_vital_product_matcha",
+      "siteProfileId": "site_vitalcore",
+      "url": "https://vitalcore.example/products/ceremonial-matcha",
+      "canonicalUrl": "https://vitalcore.example/products/ceremonial-matcha",
+      "title": "Ceremonial Matcha",
+      "contentType": "product",
+      "topic": "matcha",
+      "commercialIntent": "transactional",
+      "indexability": "indexable",
+      "priority": 80,
+      "verification": "DISCOVERED"
+    }
+  ],
+  "competitors": [
+    {
+      "id": "comp_teacompetitor",
+      "siteProfileId": "site_vitalcore",
+      "domain": "teacompetitor.example",
+      "verification": "DISCOVERED",
+      "relationship": "direct"
+    }
+  ],
+  "competitorBacklinks": [
+    {
+      "competitorId": "comp_teacompetitor",
+      "competitorDomain": "teacompetitor.example",
+      "backlinks": [
+        {
+          "linkingDomain": "wellnessresources.example",
+          "linkingPageUrl": "https://wellnessresources.example/tea-buying-guide",
+          "targetUrl": "https://teacompetitor.example/matcha",
+          "anchorText": "matcha guide",
+          "authority": 48
+        },
+        {
+          "linkingDomain": "teablogger.example",
+          "linkingPageUrl": "https://teablogger.example/best-matcha",
+          "targetUrl": "https://teacompetitor.example/best-matcha",
+          "anchorText": "best matcha"
+        }
+      ]
+    }
+  ],
+  "brokenLinks": [
+    {
+      "sourcePageUrl": "https://wellnessresources.example/tea-buying-guide",
+      "brokenDestinationUrl": "https://deadtea.example.org/matcha-faq",
+      "anchorText": "matcha FAQ",
+      "httpState": 404,
+      "detectedAt": 1714500000000
+    }
+  ],
+  "resourcePages": [
+    {
+      "url": "https://wellnessresources.example/tea-buying-guide",
+      "title": "Wellness Tea Buying Guide",
+      "snippet": "Comprehensive tea buying guide covering matcha, oolong, and herbal blends."
+    }
+  ],
+  "mentions": [
+    {
+      "url": "https://wellnessblogger.example/post/vitalcore-mention",
+      "snippet": "vITAL Core has an interesting take on caffeine research.",
+      "term": "vITAL Core",
+      "hasLink": false
+    }
+  ],
+  "internalLinks": [
+    { "source": "page_vital_home", "target": "page_vital_matcha_guide", "anchor": "matcha guide" },
+    { "source": "page_vital_matcha_guide", "target": "page_vital_product_matcha", "anchor": "ceremonial matcha" },
+    { "source": "page_vital_home", "target": "page_vital_research", "anchor": "research" }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "backlinks": [
+    {
+      "linkingDomain": "coffeeworld.example",
+      "linkingPageUrl": "https://coffeeworld.example/resources",
+      "targetUrl": "https://espressoblog.example",
+      "anchorText": "espresso blog",
+      "authority": 40,
+      "matchDomain": "espressoblog.example"
+    }
+  ],
+  "brokenLinks": [
+    {
+      "sourcePageUrl": "https://coffeeworld.example/resources",
+      "brokenDestinationUrl": "https://deadcoffee.example.org/grinder-faq",
+      "anchorText": "grinder FAQ",
+      "httpState": 404,
+      "matchPage": "https://coffeeworld.example/resources"
+    }
+  ],
+  "resourcePages": [
+    {
+      "url": "https://coffeeworld.example/resources",
+      "title": "Coffee Resources Directory",
+      "snippet": "Directory of coffee resources, blogs, and reviews.",
+      "topicMatch": ["coffee", "espresso"]
+    }
+  ],
+  "mentions": [
+    {
+      "url": "https://coffeeblog.example/post/generic-shoutout",
+      "snippet": "Generic Affiliate Site has solid espresso coverage.",
+      "term": "Generic Affiliate Site",
+      "hasLink": false,
+      "matchTerm": "generic affiliate site"
+    }
+  ]
+}

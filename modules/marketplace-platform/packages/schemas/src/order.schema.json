@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://primeopp.dev/schemas/order.json",
+  "title": "Order",
+  "type": "object",
+  "required": [
+    "orderId",
+    "tenantId",
+    "channelId",
+    "buyer",
+    "seller",
+    "listing",
+    "lines",
+    "price",
+    "commission",
+    "payment",
+    "fulfillment",
+    "currentState",
+    "createdAt",
+    "updatedAt",
+    "idempotencyKey"
+  ],
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "channelId": {
+      "type": "string"
+    },
+    "buyer": {
+      "type": "object"
+    },
+    "seller": {
+      "type": "object"
+    },
+    "listing": {
+      "type": "object"
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "price": {
+      "type": "object"
+    },
+    "commission": {
+      "type": "object"
+    },
+    "payment": {
+      "type": "object"
+    },
+    "fulfillment": {
+      "type": "object"
+    },
+    "currentState": {
+      "type": "string",
+      "enum": [
+        "CREATED",
+        "PAYMENT_PENDING",
+        "PAID",
+        "CONFIRMED",
+        "ALLOCATED",
+        "AWAITING_SHIPMENT",
+        "SHIPPED",
+        "READY_FOR_PICKUP",
+        "PICKED_UP",
+        "DELIVERED",
+        "COMPLETED",
+        "CANCEL_REQUESTED",
+        "CANCELLED",
+        "RETURN_REQUESTED",
+        "RETURNED",
+        "REFUNDED",
+        "DISPUTED",
+        "FAILED"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "updatedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "idempotencyKey": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

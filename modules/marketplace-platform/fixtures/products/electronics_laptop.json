@@ -1,0 +1,45 @@
+{
+  "productId": "prod_laptop_001",
+  "title": "ThinkPad X1 Carbon Gen 10",
+  "brand": "Lenovo",
+  "description": "ThinkPad X1 Carbon Gen 10, i7, 16GB RAM, 512GB SSD.",
+  "identifiers": [
+    {
+      "kind": "UPC",
+      "value": "019234567890"
+    },
+    {
+      "kind": "MPN",
+      "value": "TPX1C10"
+    }
+  ],
+  "attributes": [
+    {
+      "namespace": "electronics",
+      "name": "cpu",
+      "value": "i7-1260P"
+    },
+    {
+      "namespace": "electronics",
+      "name": "ram",
+      "value": "16GB"
+    }
+  ],
+  "categories": [
+    {
+      "categoryId": "cat_electronics",
+      "canonicalName": "electronics",
+      "path": [
+        "electronics"
+      ],
+      "attributes": []
+    }
+  ],
+  "images": [
+    {
+      "imageId": "img3",
+      "url": "https://example.test/thinkpad.jpg"
+    }
+  ],
+  "condition": "used_very_good"
+}

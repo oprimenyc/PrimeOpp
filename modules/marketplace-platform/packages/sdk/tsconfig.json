@@ -1,0 +1,125 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.json"
+  ],
+  "exclude": [
+    "test/**/*",
+    "dist/**/*",
+    "dist-test/**/*",
+    "node_modules/**/*"
+  ],
+  "references": [
+    {
+      "path": "../contracts"
+    },
+    {
+      "path": "../schemas"
+    },
+    {
+      "path": "../seller"
+    },
+    {
+      "path": "../buyer"
+    },
+    {
+      "path": "../canonical-listing"
+    },
+    {
+      "path": "../channel-registry"
+    },
+    {
+      "path": "../listing-transformer"
+    },
+    {
+      "path": "../listing-publisher"
+    },
+    {
+      "path": "../listing-sync"
+    },
+    {
+      "path": "../inventory-sync"
+    },
+    {
+      "path": "../offer-engine"
+    },
+    {
+      "path": "../negotiation-engine"
+    },
+    {
+      "path": "../order-engine"
+    },
+    {
+      "path": "../fulfillment-contracts"
+    },
+    {
+      "path": "../shipping-contracts"
+    },
+    {
+      "path": "../commission-engine"
+    },
+    {
+      "path": "../settlement-contracts"
+    },
+    {
+      "path": "../returns"
+    },
+    {
+      "path": "../disputes"
+    },
+    {
+      "path": "../messaging"
+    },
+    {
+      "path": "../trust-safety"
+    },
+    {
+      "path": "../moderation"
+    },
+    {
+      "path": "../search-contracts"
+    },
+    {
+      "path": "../seo"
+    },
+    {
+      "path": "../affiliate-contracts"
+    },
+    {
+      "path": "../amos-contracts"
+    },
+    {
+      "path": "../evidence"
+    },
+    {
+      "path": "../observability"
+    },
+    {
+      "path": "../tenant-config"
+    },
+    {
+      "path": "../adapter-sdk"
+    },
+    {
+      "path": "../adapter-testkit"
+    },
+    {
+      "path": "../../adapters/primeopp-marketplace"
+    },
+    {
+      "path": "../../adapters/test-ebay"
+    },
+    {
+      "path": "../../adapters/test-amazon"
+    },
+    {
+      "path": "../../adapters/test-facebook-marketplace"
+    }
+  ]
+}

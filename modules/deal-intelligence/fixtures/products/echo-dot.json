@@ -1,0 +1,11 @@
+{
+  "sourceTitle": "Echo Dot (5th Gen) B0XYZ12345",
+  "brand": "Amazon",
+  "identifiers": [
+    {
+      "type": "ASIN",
+      "value": "B0XYZ12345",
+      "source": "fixture"
+    }
+  ]
+}

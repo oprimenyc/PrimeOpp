@@ -1,0 +1,30 @@
+{
+  "name": "primeopp-marketplace-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PrimeOpp Marketplace & Cross-Listing Platform — production-oriented, reusable, independently buildable.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "adapters/*"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -b tsconfig.build.json --noEmit",
+    "lint": "node scripts/lint.js",
+    "test": "node --test --test-reporter=spec \"packages/*/test/**/*.test.js\" \"adapters/*/test/**/*.test.js\"",
+    "verify": "node scripts/verify.js",
+    "clean": "node scripts/clean.js",
+    "audit": "node scripts/audit.js",
+    "package-zip": "node scripts/package-zip.js",
+    "clean-room-verify": "node scripts/clean-room-verify.js"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.130",
+    "typescript": "^5.4.5"
+  }
+}

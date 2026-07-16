@@ -1,0 +1,9 @@
+{
+  "network": {
+    "id": "amazon-associates",
+    "name": "Amazon Associates"
+  },
+  "merchantId": "amzn-1",
+  "merchantName": "Amazon",
+  "defaultCommissionPct": 4
+}

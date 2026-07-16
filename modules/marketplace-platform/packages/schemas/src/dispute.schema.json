@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://primeopp.dev/schemas/dispute.json",
+  "title": "DisputeRecord",
+  "type": "object",
+  "required": [
+    "disputeId",
+    "tenantId",
+    "kind",
+    "openedBy",
+    "openedAgainst",
+    "state",
+    "appealable",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "disputeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "item_not_received",
+        "item_not_as_described",
+        "counterfeit_allegation",
+        "payment_dispute",
+        "return_dispute",
+        "shipping_damage",
+        "local_pickup_dispute",
+        "seller_conduct",
+        "buyer_conduct",
+        "fee_dispute"
+      ]
+    },
+    "openedBy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "openedAgainst": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "opened",
+        "evidence_collection",
+        "provisional_hold",
+        "human_review",
+        "resolved",
+        "appealed",
+        "final"
+      ]
+    },
+    "appealable": {
+      "type": "boolean"
+    },
+    "createdAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "updatedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    }
+  },
+  "additionalProperties": true
+}

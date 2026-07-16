@@ -1,0 +1,8 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "Tenant A Seller",
+  "email": "a@tenant-a.test",
+  "sellerType": "business",
+  "timezone": "America/New_York",
+  "locale": "en-US"
+}

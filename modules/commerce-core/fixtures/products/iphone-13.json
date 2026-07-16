@@ -1,0 +1,27 @@
+{
+  "tenantId": "fixture-tenant",
+  "kind": "PHYSICAL",
+  "title": "Apple iPhone 13 128GB Blue",
+  "brand": { "name": "Apple", "normalized": "APPLE", "confidence": 0.99, "source": "fixture" },
+  "model": { "name": "iPhone 13", "normalized": "IPHONE 13", "brand": "APPLE", "confidence": 0.95, "source": "fixture" },
+  "category": { "taxonomy": "default", "path": ["Electronics", "Phones"], "leaf": "Phones", "confidence": 0.95 },
+  "identifiers": [
+    { "type": "UPC", "value": "194253340276", "source": "fixture", "verification": "PROVIDER_VERIFIED", "confidence": 1.0, "observedAt": "2026-01-01T00:00:00Z" }
+  ],
+  "attributes": [
+    { "axis": "STORAGE", "value": "128GB", "source": "fixture", "confidence": 0.95 },
+    { "axis": "COLOR", "value": "Blue", "source": "fixture", "confidence": 0.95 }
+  ],
+  "condition": {
+    "condition": "GOOD",
+    "confidence": 0.85,
+    "observedDefects": ["light_scratch"],
+    "missingAccessories": [],
+    "packagingCondition": "ORIGINAL",
+    "functionalStatus": "WORKING",
+    "cosmeticStatus": "LIGHT_SCRATCHES",
+    "photoRefs": ["img1", "img2"],
+    "evidenceRefs": ["evidence/condition/123"],
+    "assessedAt": "2026-01-01T00:00:00Z"
+  }
+}

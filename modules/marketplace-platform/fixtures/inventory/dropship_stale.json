@@ -1,0 +1,22 @@
+{
+  "inventoryId": "inv_drop_1",
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "productId": "prod_drop_001",
+  "sku": "DROP-SKU",
+  "kind": "dropship",
+  "quantityTotal": 3,
+  "quantityAvailable": 3,
+  "quantityReserved": 0,
+  "quantityAllocated": 0,
+  "quantitySold": 0,
+  "quantityDamaged": 0,
+  "location": {
+    "locationId": "loc_supplier",
+    "name": "Dropship Supplier",
+    "region": "US"
+  },
+  "supplierRef": "supplier_drop_1",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}

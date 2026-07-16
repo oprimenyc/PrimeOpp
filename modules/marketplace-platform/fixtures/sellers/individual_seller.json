@@ -1,0 +1,12 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "Alex Individual",
+  "email": "alex@example.test",
+  "sellerType": "individual_reseller",
+  "timezone": "America/New_York",
+  "locale": "en-US",
+  "defaultAlsoListOnPrimeOppMarketplace": true,
+  "defaultChannels": [
+    "primeopp-marketplace"
+  ]
+}

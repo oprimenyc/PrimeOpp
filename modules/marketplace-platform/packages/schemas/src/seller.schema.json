@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://primeopp.dev/schemas/seller.json",
+  "title": "Seller",
+  "type": "object",
+  "required": [
+    "sellerId",
+    "tenantId",
+    "organization",
+    "account",
+    "profile",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "sellerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "organization": {
+      "type": "object",
+      "required": [
+        "organizationId",
+        "tenantId",
+        "name",
+        "sellerType",
+        "defaultAlsoListOnPrimeOppMarketplace",
+        "defaultChannels",
+        "createdAt"
+      ],
+      "properties": {
+        "organizationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenantId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "sellerType": {
+          "type": "string",
+          "enum": [
+            "individual_reseller",
+            "sole_proprietor",
+            "business",
+            "consignment_seller",
+            "nonprofit",
+            "thrift_store",
+            "pawn_shop",
+            "retailer",
+            "liquidation_company",
+            "estate_sale_company",
+            "enterprise",
+            "white_label_tenant"
+          ]
+        },
+        "defaultAlsoListOnPrimeOppMarketplace": {
+          "type": "boolean"
+        },
+        "defaultChannels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        }
+      },
+      "additionalProperties": true
+    },
+    "account": {
+      "type": "object",
+      "required": [
+        "accountId",
+        "organizationId",
+        "tenantId",
+        "email",
+        "lifecycle",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "organizationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenantId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "email": {
+          "type": "string"
+        },
+        "lifecycle": {
+          "type": "string",
+          "enum": [
+            "prospect",
+            "onboarding",
+            "active",
+            "suspended",
+            "paused",
+            "closed",
+            "terminated"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        },
+        "updatedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        }
+      },
+      "additionalProperties": true
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "displayName",
+        "contactEmail",
+        "timezone",
+        "locale"
+      ],
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "contactEmail": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "createdAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "updatedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    }
+  },
+  "additionalProperties": true
+}

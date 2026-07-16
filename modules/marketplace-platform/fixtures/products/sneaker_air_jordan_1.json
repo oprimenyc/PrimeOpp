@@ -1,0 +1,47 @@
+{
+  "productId": "prod_aj1_001",
+  "title": "Air Jordan 1 Retro High OG — Chicago",
+  "brand": "Nike",
+  "model": "Air Jordan 1",
+  "description": "Air Jordan 1 Retro High OG in Chicago colorway. Size 10.",
+  "identifiers": [
+    {
+      "kind": "UPC",
+      "value": "019123456789"
+    },
+    {
+      "kind": "brand_sku",
+      "value": "AJ1-CHI-10"
+    }
+  ],
+  "attributes": [
+    {
+      "namespace": "apparel",
+      "name": "size",
+      "value": "10"
+    },
+    {
+      "namespace": "apparel",
+      "name": "colorway",
+      "value": "Chicago"
+    }
+  ],
+  "categories": [
+    {
+      "categoryId": "cat_sneakers",
+      "canonicalName": "sneakers",
+      "path": [
+        "sneakers"
+      ],
+      "attributes": []
+    }
+  ],
+  "images": [
+    {
+      "imageId": "img1",
+      "url": "https://example.test/aj1.jpg",
+      "alt": "Air Jordan 1 Chicago"
+    }
+  ],
+  "condition": "new"
+}

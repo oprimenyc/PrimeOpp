@@ -1,0 +1,9 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "ConsignCo",
+  "email": "ops@consignco.test",
+  "sellerType": "consignment_seller",
+  "timezone": "America/New_York",
+  "locale": "en-US",
+  "defaultAlsoListOnPrimeOppMarketplace": true
+}

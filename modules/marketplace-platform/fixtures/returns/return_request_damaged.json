@@ -1,0 +1,9 @@
+{
+  "tenantId": "tenant_demo",
+  "orderId": "order_demo_1",
+  "buyerId": "buyer_demo",
+  "sellerId": "seller_demo",
+  "reason": "damaged",
+  "description": "Item arrived with visible damage to the box.",
+  "policyVersion": "2026.01"
+}

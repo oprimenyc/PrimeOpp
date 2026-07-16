@@ -1,0 +1,8 @@
+{
+  "code": "SAVE10",
+  "description": "10% off",
+  "discountType": "percentage",
+  "discountValue": 10,
+  "stackable": "yes",
+  "evidence": []
+}

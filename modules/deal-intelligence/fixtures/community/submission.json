@@ -1,0 +1,9 @@
+{
+  "tenantId": "tenant:public",
+  "contributorId": "u1",
+  "url": "https://www.amazon.com/dp/B0XYZ",
+  "observedPrice": {
+    "amountMinor": 4999,
+    "currency": "USD"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@primeopp-marketplace/test-facebook-marketplace",
+  "version": "1.0.0",
+  "description": "TEST-ONLY adapter stub for facebook-marketplace. No live connectivity.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@primeopp-marketplace/contracts": "1.0.0",
+    "@primeopp-marketplace/adapter-sdk": "1.0.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "node --test --test-reporter=spec \"dist-test/**/*.test.js\""
+  }
+}

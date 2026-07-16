@@ -1,0 +1,41 @@
+{
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "sellerId": "seller_demo",
+  "productId": "prod_prohibited_firearm",
+  "inventoryId": "inv_firearm_1",
+  "title": "Vintage firearm — collector sale",
+  "description": "For sale: vintage firearm.",
+  "condition": "used_good",
+  "price": {
+    "amount": "500.00",
+    "currency": "USD"
+  },
+  "quantity": 1,
+  "shippingPolicy": {
+    "shippingPolicyId": "pol_firearm",
+    "handlingTimeDays": 5,
+    "localPickup": true,
+    "freeShipping": false
+  },
+  "returnPolicy": {
+    "returnPolicyId": "ret_firearm",
+    "returnsAccepted": false,
+    "returnWindowDays": 0,
+    "restockingFeePercent": 0,
+    "returnShippingPaidBy": "buyer"
+  },
+  "authenticity": {
+    "verifiedAuthentic": false
+  },
+  "category": "firearms",
+  "destinations": [
+    {
+      "channelId": "primeopp-marketplace",
+      "enabled": true,
+      "explicitlySelected": false,
+      "primeOppMarketplace": true,
+      "selectedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}

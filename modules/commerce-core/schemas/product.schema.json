@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PrimeOpp Canonical Product",
+  "type": "object",
+  "required": ["id", "schemaVersion", "kind", "title", "tenantId", "version"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "schemaVersion": { "type": "string" },
+    "kind": { "type": "string", "enum": ["PHYSICAL", "DIGITAL", "POD", "DROPSHIP", "AFFILIATE", "SERVICE", "BUNDLE", "KIT", "LOT", "MULTIPACK", "SERIALIZED", "UNIQUE_COLLECTIBLE"] },
+    "title": { "type": "string", "minLength": 1 },
+    "tenantId": { "type": "string", "minLength": 1 },
+    "organizationId": { "type": "string" },
+    "version": { "type": "integer", "minimum": 0 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

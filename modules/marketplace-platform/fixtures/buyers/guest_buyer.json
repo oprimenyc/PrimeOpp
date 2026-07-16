@@ -1,0 +1,5 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "Guest",
+  "buyerType": "guest"
+}

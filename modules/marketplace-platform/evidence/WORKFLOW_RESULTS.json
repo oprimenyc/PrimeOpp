@@ -1,0 +1,92 @@
+{
+  "workflows": [
+    {
+      "name": "canonical_listing_proof",
+      "passed": true
+    },
+    {
+      "name": "visible_primeopp_default_proof",
+      "passed": true
+    },
+    {
+      "name": "seller_opt_out_proof",
+      "passed": true
+    },
+    {
+      "name": "multi_channel_transformation_proof",
+      "passed": true
+    },
+    {
+      "name": "external_order_ingestion_proof",
+      "passed": true
+    },
+    {
+      "name": "simultaneous_sale_oversell_proof",
+      "passed": true
+    },
+    {
+      "name": "primeopp_marketplace_offer_proof",
+      "passed": true
+    },
+    {
+      "name": "commission_promotion_proof",
+      "passed": true
+    },
+    {
+      "name": "discounted_commission_proof",
+      "passed": true
+    },
+    {
+      "name": "shipping_handoff_proof",
+      "passed": true
+    },
+    {
+      "name": "local_pickup_proof",
+      "passed": true
+    },
+    {
+      "name": "return_proof",
+      "passed": true
+    },
+    {
+      "name": "counterfeit_risk_pause_proof",
+      "passed": true
+    },
+    {
+      "name": "prohibited_product_rejection_proof",
+      "passed": true
+    },
+    {
+      "name": "consignment_proof",
+      "passed": true
+    },
+    {
+      "name": "pod_proof",
+      "passed": true
+    },
+    {
+      "name": "dropship_stale_stock_proof",
+      "passed": true
+    },
+    {
+      "name": "affiliate_separation_proof",
+      "passed": true
+    },
+    {
+      "name": "enterprise_multi_location_proof",
+      "passed": true
+    },
+    {
+      "name": "tenant_isolation_proof",
+      "passed": true
+    },
+    {
+      "name": "browser_operator_handoff_proof",
+      "passed": true
+    },
+    {
+      "name": "amos_job_proof",
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.json"
+  ],
+  "exclude": [
+    "test/**/*",
+    "dist/**/*",
+    "dist-test/**/*",
+    "node_modules/**/*"
+  ],
+  "references": [
+    {
+      "path": "../contracts"
+    },
+    {
+      "path": "../channel-registry"
+    },
+    {
+      "path": "../listing-transformer"
+    },
+    {
+      "path": "../evidence"
+    },
+    {
+      "path": "../observability"
+    },
+    {
+      "path": "../canonical-listing"
+    },
+    {
+      "path": "../trust-safety"
+    },
+    {
+      "path": "../adapter-sdk"
+    }
+  ]
+}

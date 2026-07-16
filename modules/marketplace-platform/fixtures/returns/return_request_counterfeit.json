@@ -1,0 +1,9 @@
+{
+  "tenantId": "tenant_demo",
+  "orderId": "order_demo_2",
+  "buyerId": "buyer_demo",
+  "sellerId": "seller_demo",
+  "reason": "counterfeit_concern",
+  "description": "Suspicious that the item is not authentic.",
+  "policyVersion": "2026.01"
+}

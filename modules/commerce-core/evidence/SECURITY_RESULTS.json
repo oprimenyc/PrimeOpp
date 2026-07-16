@@ -1,0 +1,56 @@
+{
+  "primeopp-marketplace": [
+    {
+      "test": "identity",
+      "passed": true,
+      "message": "local.test.primeopp-marketplace v1.0.0"
+    },
+    {
+      "test": "capability.publish",
+      "passed": true,
+      "message": "PUBLISH_LISTING present"
+    },
+    {
+      "test": "conditionMappings",
+      "passed": true,
+      "message": "all required conditions mapped"
+    },
+    {
+      "test": "testOnlyFlag",
+      "passed": true,
+      "message": "test-only adapter correctly labeled"
+    },
+    {
+      "test": "publishRequiresAcceptance",
+      "passed": true,
+      "message": "publish correctly rejected without acceptance"
+    }
+  ],
+  "ebay-test-adapter": [
+    {
+      "test": "identity",
+      "passed": true,
+      "message": "local.test.ebay-test-adapter v1.0.0"
+    },
+    {
+      "test": "capability.publish",
+      "passed": true,
+      "message": "PUBLISH_LISTING present"
+    },
+    {
+      "test": "conditionMappings",
+      "passed": true,
+      "message": "all required conditions mapped"
+    },
+    {
+      "test": "testOnlyFlag",
+      "passed": true,
+      "message": "test-only adapter correctly labeled"
+    },
+    {
+      "test": "publishRequiresAcceptance",
+      "passed": true,
+      "message": "publish correctly rejected without acceptance"
+    }
+  ]
+}

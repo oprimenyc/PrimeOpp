@@ -1,0 +1,6 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "Biz Buyer Co",
+  "email": "biz@buyer.test",
+  "buyerType": "business"
+}

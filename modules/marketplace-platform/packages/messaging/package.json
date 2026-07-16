@@ -1,0 +1,24 @@
+{
+  "name": "@primeopp-marketplace/messaging",
+  "version": "1.0.0",
+  "description": "PrimeOpp Marketplace Platform — messaging package.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@primeopp-marketplace/contracts": "1.0.0",
+    "@primeopp-marketplace/trust-safety": "1.0.0",
+    "@primeopp-marketplace/evidence": "1.0.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "node --test --test-reporter=spec \"dist-test/**/*.test.js\""
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "productId": "prod_prohibited_firearm",
+  "title": "Vintage firearm — collector sale",
+  "brand": "Unknown",
+  "description": "For sale: vintage firearm.",
+  "identifiers": [],
+  "attributes": [],
+  "categories": [
+    {
+      "categoryId": "firearms",
+      "canonicalName": "firearms",
+      "path": [
+        "firearms"
+      ],
+      "attributes": []
+    }
+  ],
+  "images": [],
+  "condition": "used_good"
+}

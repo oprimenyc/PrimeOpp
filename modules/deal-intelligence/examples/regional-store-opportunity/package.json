@@ -1,0 +1,13 @@
+{
+  "name": "@primeopp-deal-intelligence/example-regional-store-opportunity",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@primeopp-deal-intelligence/sdk": "1.0.0",
+    "@primeopp-deal-intelligence/contracts": "1.0.0"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://primeopp.dev/schemas/buyer.json",
+  "title": "Buyer",
+  "type": "object",
+  "required": [
+    "buyerId",
+    "tenantId",
+    "account",
+    "profile",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "buyerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "account": {
+      "type": "object",
+      "required": [
+        "accountId",
+        "tenantId",
+        "buyerType",
+        "lifecycle",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenantId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "buyerType": {
+          "type": "string",
+          "enum": [
+            "guest",
+            "registered",
+            "verified",
+            "business",
+            "enterprise",
+            "local_pickup",
+            "repeat"
+          ]
+        },
+        "lifecycle": {
+          "type": "string",
+          "enum": [
+            "guest",
+            "active",
+            "verified",
+            "paused",
+            "suspended",
+            "closed"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        },
+        "updatedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        }
+      },
+      "additionalProperties": true
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "displayName",
+        "locale",
+        "timezone"
+      ],
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "createdAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "updatedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    }
+  },
+  "additionalProperties": true
+}

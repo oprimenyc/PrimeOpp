@@ -1,0 +1,6 @@
+{
+  "tenantId": "tenant_demo",
+  "displayName": "Ver Buyer",
+  "email": "ver@buyer.test",
+  "buyerType": "verified"
+}

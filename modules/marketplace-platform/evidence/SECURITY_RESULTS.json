@@ -1,0 +1,8 @@
+{
+  "tenantIsolation": true,
+  "crossTenantAccessDenied": true,
+  "signatureVerification": true,
+  "duplicateEventRejection": true,
+  "prohibitedProductRejection": true,
+  "counterfeitRiskPauses": true
+}

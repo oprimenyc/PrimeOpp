@@ -1,0 +1,45 @@
+{
+  "backlinks": [
+    {
+      "linkingDomain": "wellnessresources.example",
+      "linkingPageUrl": "https://wellnessresources.example/tea-buying-guide",
+      "targetUrl": "https://teacompetitor.example/matcha",
+      "anchorText": "matcha guide",
+      "authority": 48,
+      "matchDomain": "teacompetitor.example"
+    },
+    {
+      "linkingDomain": "teablogger.example",
+      "linkingPageUrl": "https://teablogger.example/best-matcha",
+      "targetUrl": "https://teacompetitor.example/best-matcha",
+      "anchorText": "best matcha",
+      "matchDomain": "teacompetitor.example"
+    }
+  ],
+  "brokenLinks": [
+    {
+      "sourcePageUrl": "https://wellnessresources.example/tea-buying-guide",
+      "brokenDestinationUrl": "https://deadtea.example.org/matcha-faq",
+      "anchorText": "matcha FAQ",
+      "httpState": 404,
+      "matchPage": "https://wellnessresources.example/tea-buying-guide"
+    }
+  ],
+  "resourcePages": [
+    {
+      "url": "https://wellnessresources.example/tea-buying-guide",
+      "title": "Wellness Tea Buying Guide",
+      "snippet": "Comprehensive tea buying guide covering matcha, oolong, and herbal blends.",
+      "topicMatch": ["matcha", "tea", "wellness"]
+    }
+  ],
+  "mentions": [
+    {
+      "url": "https://wellnessblogger.example/post/vitalcore-mention",
+      "snippet": "vITAL Core has an interesting take on caffeine research.",
+      "term": "vITAL Core",
+      "hasLink": false,
+      "matchTerm": "vital core"
+    }
+  ]
+}

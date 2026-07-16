@@ -1,0 +1,9 @@
+{
+  "tenantId": "tenant_demo",
+  "listingId": "list_demo_sneaker",
+  "buyerId": "buyer_demo",
+  "sellerId": "seller_demo",
+  "channelId": "primeopp-marketplace",
+  "offerAmount": "400.00",
+  "quantity": 1
+}

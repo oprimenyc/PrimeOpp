@@ -1,0 +1,146 @@
+{
+  "adapter-sdk": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "adapter-testkit": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "barcode": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "canonical-catalog": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "channel-contracts": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "cli": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "commerce-events": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "condition-engine": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "contracts": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "evidence": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "fee-engine": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "image-match-contracts": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "inventory": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "listing-contracts": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "ocr-contracts": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "opportunity-engine": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "pricing": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "product-identity": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "profit-engine": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "schemas": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "sdk": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "shipping-estimator": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "tenant-config": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
+  "variant-engine": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  }
+}

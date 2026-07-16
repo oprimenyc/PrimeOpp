@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.nyc_output/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+primeopp-deal-intelligence.zip
+cleanroom-verify/

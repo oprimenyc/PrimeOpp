@@ -1,0 +1,36 @@
+{
+  "productId": "prod_vinyl_001",
+  "title": "Rare Beatles White Album Vinyl",
+  "brand": "Apple Records",
+  "description": "Original pressing Beatles White Album, low serial number.",
+  "identifiers": [
+    {
+      "kind": "UPC",
+      "value": "077779999999"
+    }
+  ],
+  "attributes": [
+    {
+      "namespace": "collectibles",
+      "name": "era",
+      "value": "1968"
+    }
+  ],
+  "categories": [
+    {
+      "categoryId": "cat_collectibles",
+      "canonicalName": "collectibles",
+      "path": [
+        "collectibles"
+      ],
+      "attributes": []
+    }
+  ],
+  "images": [
+    {
+      "imageId": "img2",
+      "url": "https://example.test/white-album.jpg"
+    }
+  ],
+  "condition": "used_very_good"
+}

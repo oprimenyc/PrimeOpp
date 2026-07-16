@@ -1,0 +1,20 @@
+{
+  "productId": "prod_counterfeit_risk",
+  "title": "Replica Air Jordan 1",
+  "brand": "Unknown",
+  "description": "1:1 replica Air Jordan 1. Looks just like the real thing.",
+  "identifiers": [],
+  "attributes": [],
+  "categories": [
+    {
+      "categoryId": "cat_sneakers",
+      "canonicalName": "sneakers",
+      "path": [
+        "sneakers"
+      ],
+      "attributes": []
+    }
+  ],
+  "images": [],
+  "condition": "new"
+}

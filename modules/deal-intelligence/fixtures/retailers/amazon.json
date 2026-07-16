@@ -1,0 +1,17 @@
+{
+  "id": "ret:amazon",
+  "name": "Amazon",
+  "type": "national-chain",
+  "domains": [
+    "amazon.com"
+  ],
+  "regions": [
+    "US"
+  ],
+  "sourceMethods": [
+    "official-api",
+    "browser-operator",
+    "community-submission",
+    "manual-entry"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "inventoryId": "inv_unique_1",
+  "tenantId": "tenant_demo",
+  "organizationId": "org_demo",
+  "productId": "prod_aj1_001",
+  "sku": "AJ1-CHI-10",
+  "kind": "serialized",
+  "quantityTotal": 1,
+  "quantityAvailable": 1,
+  "quantityReserved": 0,
+  "quantityAllocated": 0,
+  "quantitySold": 0,
+  "quantityDamaged": 0,
+  "location": {
+    "locationId": "loc_demo_1",
+    "name": "Main Warehouse",
+    "region": "US"
+  },
+  "serialNumbers": [
+    "SN-AJ1-0001"
+  ],
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}
