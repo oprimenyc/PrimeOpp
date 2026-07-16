@@ -19,6 +19,7 @@ b135389de2c24df235bfef6539e99e4428fe0e66
 - modules/commerce-core
 - modules/affiliate-backlink-engine
 - modules/product-intake
+- modules/product-enrichment
 
 ## Preserved source packages
 
@@ -34,3 +35,4 @@ _source-archives/
 The legacy ecommerce implementation is the recovered product foundation.
 The imported modules are isolated for audit, normalization, integration,
 testing, and eventual consolidation into the canonical PrimeOpp architecture.
+

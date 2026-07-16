@@ -1,0 +1,59 @@
+[
+  {
+    "id": "fixture-beauty-001",
+    "matchBy": { "gtin": "071919469775", "upc": "071919469775" },
+    "confidence": 0.94,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "CeraVe Moisturizing Cream 19 Ounce Daily Face and Body Moisturizer",
+      "identity.brand": "CeraVe",
+      "identity.manufacturer": "L'Oreal USA",
+      "identity.model": "100069",
+      "identifiers.mpn": "100069",
+      "classification.category": "Beauty & Personal Care",
+      "classification.subcategory": "Skincare",
+      "classification.taxonomyPath": ["Beauty & Personal Care", "Skincare", "Moisturizers"],
+      "description": "Daily moisturizing cream for face and body with hyaluronic acid and three essential ceramides.",
+      "bullets": [
+        "19 ounce jar",
+        "Contains hyaluronic acid",
+        "Three essential ceramides",
+        "Fragrance-free",
+        "Non-comedogenic"
+      ],
+      "attributes.weight": "538g"
+    },
+    "images": [
+      { "url": "https://example.com/images/cerave-cream.jpg", "isPrimary": true, "width": 800, "height": 800 }
+    ],
+    "externalReference": "fixture-beauty-001"
+  },
+  {
+    "id": "fixture-beauty-002",
+    "matchBy": { "gtin": "060933289312", "upc": "060933289312" },
+    "confidence": 0.93,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Cetaphil Gentle Skin Cleanser 16 fl oz",
+      "identity.brand": "Cetaphil",
+      "identity.manufacturer": "Galderma",
+      "identity.model": "20993",
+      "identifiers.mpn": "20993",
+      "classification.category": "Beauty & Personal Care",
+      "classification.subcategory": "Skincare",
+      "classification.taxonomyPath": ["Beauty & Personal Care", "Skincare", "Cleansers"],
+      "description": "Gentle, non-irritating cleanser for all skin types, including sensitive skin.",
+      "bullets": [
+        "16 fl oz",
+        "Soap-free",
+        "Non-comedogenic",
+        "Dermatologist recommended"
+      ],
+      "attributes.weight": "473g"
+    },
+    "images": [
+      { "url": "https://example.com/images/cetaphil-cleanser.jpg", "isPrimary": true, "width": 600, "height": 800 }
+    ],
+    "externalReference": "fixture-beauty-002"
+  }
+]

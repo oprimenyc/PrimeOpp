@@ -1,0 +1,61 @@
+[
+  {
+    "id": "fixture-apparel-001",
+    "matchBy": { "gtin": "191371123456", "brand": "Levi's", "model": "505" },
+    "confidence": 0.92,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Levi's Men's 505 Regular Fit Jeans",
+      "identity.brand": "Levi's",
+      "identity.manufacturer": "Levi Strauss & Co.",
+      "identity.model": "505",
+      "identifiers.mpn": "505-REG-32x32",
+      "classification.category": "Apparel",
+      "classification.subcategory": "Men's Jeans",
+      "classification.taxonomyPath": ["Apparel", "Men", "Jeans"],
+      "description": "Classic regular fit jeans with a straight leg through the seat and thigh.",
+      "bullets": [
+        "Regular fit",
+        "Straight leg",
+        "Zipper fly",
+        "100% cotton"
+      ],
+      "attributes.color": "Blue",
+      "attributes.size": "32x32",
+      "attributes.material": "100% Cotton"
+    },
+    "images": [
+      { "url": "https://example.com/images/levis-505-front.jpg", "isPrimary": true, "width": 800, "height": 1200 }
+    ],
+    "externalReference": "fixture-apparel-001"
+  },
+  {
+    "id": "fixture-apparel-002",
+    "matchBy": { "gtin": "191371198765", "brand": "Nike", "model": "Dri-FIT" },
+    "confidence": 0.91,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Nike Dri-FIT Men's Training T-Shirt",
+      "identity.brand": "Nike",
+      "identity.manufacturer": "Nike, Inc.",
+      "identity.model": "Dri-FIT",
+      "identifiers.mpn": "DH7987",
+      "classification.category": "Apparel",
+      "classification.subcategory": "Men's Tops",
+      "classification.taxonomyPath": ["Apparel", "Men", "Tops", "T-Shirts"],
+      "description": "Moisture-wicking Dri-FIT technology keeps you dry and comfortable during workouts.",
+      "bullets": [
+        "Dri-FIT moisture-wicking fabric",
+        "Standard fit",
+        "Machine washable"
+      ],
+      "attributes.color": "Black",
+      "attributes.size": "L",
+      "attributes.material": "100% Polyester"
+    },
+    "images": [
+      { "url": "https://example.com/images/nike-drifit-tshirt.jpg", "isPrimary": true, "width": 800, "height": 800 }
+    ],
+    "externalReference": "fixture-apparel-002"
+  }
+]

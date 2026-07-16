@@ -1,0 +1,40 @@
+[
+  {
+    "id": "fixture-conflict-001",
+    "matchBy": { "gtin": "0123456789012", "brand": "Conflicting Brand A", "model": "MODEL-X1" },
+    "confidence": 0.85,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Generic Widget X1",
+      "identity.brand": "BrandA",
+      "identity.manufacturer": "ManufacturerA",
+      "identity.model": "MODEL-X1",
+      "classification.category": "Electronics",
+      "attributes.color": "Black",
+      "attributes.weight": "500g"
+    },
+    "images": [
+      { "url": "https://example.com/images/widget-x1-a.jpg", "isPrimary": true, "width": 800, "height": 800 }
+    ],
+    "externalReference": "fixture-conflict-001"
+  },
+  {
+    "id": "fixture-conflict-002",
+    "matchBy": { "gtin": "0123456789012", "brand": "BrandB", "model": "MODEL-Y2" },
+    "confidence": 0.80,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Premium Widget Y2",
+      "identity.brand": "BrandB",
+      "identity.manufacturer": "ManufacturerB",
+      "identity.model": "MODEL-Y2",
+      "classification.category": "Electronics",
+      "attributes.color": "Silver",
+      "attributes.weight": "600g"
+    },
+    "images": [
+      { "url": "https://example.com/images/widget-y2-b.jpg", "isPrimary": true, "width": 800, "height": 800 }
+    ],
+    "externalReference": "fixture-conflict-002"
+  }
+]

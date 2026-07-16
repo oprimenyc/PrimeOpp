@@ -1,0 +1,57 @@
+[
+  {
+    "id": "fixture-cpg-001",
+    "matchBy": { "gtin": "036000291452", "upc": "036000291452" },
+    "confidence": 0.95,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Kraft Macaroni & Cheese Dinner Original Flavor 7.25 oz Box",
+      "identity.brand": "Kraft",
+      "identity.manufacturer": "Kraft Heinz",
+      "identity.model": "1000400008360",
+      "classification.category": "Packaged Foods",
+      "classification.subcategory": "Pasta & Side Dishes",
+      "classification.taxonomyPath": ["Grocery", "Packaged Foods", "Pasta & Side Dishes"],
+      "description": "Kraft Macaroni & Cheese Dinner Original Flavor is a quick and easy family favorite. Each 7.25 oz box makes a creamy, cheesy side dish in under 15 minutes.",
+      "bullets": [
+        "7.25 oz box",
+        "Original flavor",
+        "Ready in under 15 minutes",
+        "Artificial flavor-free cheese sauce"
+      ],
+      "attributes.color": "Yellow",
+      "attributes.weight": "206g",
+      "attributes.dimensions": "15.2x7.6x5.1cm"
+    },
+    "images": [
+      { "url": "https://example.com/images/kraft-mac-cheese-front.jpg", "isPrimary": true, "width": 800, "height": 800 },
+      { "url": "https://example.com/images/kraft-mac-cheese-back.jpg", "width": 800, "height": 800 }
+    ],
+    "externalReference": "fixture-cpg-001"
+  },
+  {
+    "id": "fixture-cpg-002",
+    "matchBy": { "gtin": "049000028904", "upc": "049000028904" },
+    "confidence": 0.94,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Coca-Cola Soda Pop 12 fl oz Can",
+      "identity.brand": "Coca-Cola",
+      "identity.manufacturer": "The Coca-Cola Company",
+      "classification.category": "Beverages",
+      "classification.subcategory": "Carbonated Soft Drinks",
+      "classification.taxonomyPath": ["Grocery", "Beverages", "Carbonated Soft Drinks"],
+      "description": "Crisp, refreshing taste of Coca-Cola in a 12 fl oz can.",
+      "bullets": [
+        "12 fl oz can",
+        "Classic Coca-Cola flavor",
+        "Caffeinated"
+      ],
+      "attributes.weight": "355g"
+    },
+    "images": [
+      { "url": "https://example.com/images/coca-cola-can.jpg", "isPrimary": true, "width": 600, "height": 800 }
+    ],
+    "externalReference": "fixture-cpg-002"
+  }
+]

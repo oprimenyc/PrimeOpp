@@ -1,0 +1,58 @@
+[
+  {
+    "id": "fixture-household-001",
+    "matchBy": { "gtin": "037000326265", "upc": "037000326265" },
+    "confidence": 0.94,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Tide PODS 3-in-1 Laundry Detergent Pacs Spring Meadow Scent 81 Count",
+      "identity.brand": "Tide",
+      "identity.manufacturer": "Procter & Gamble",
+      "identity.model": "810878021001",
+      "identifiers.mpn": "810878021001",
+      "classification.category": "Household",
+      "classification.subcategory": "Laundry",
+      "classification.taxonomyPath": ["Household", "Laundry", "Detergents"],
+      "description": "Tide PODS 3-in-1 laundry detergent pacs offer a powerful clean, stain remover, and color protector in one.",
+      "bullets": [
+        "81 count",
+        "Spring Meadow scent",
+        "3-in-1: detergent, stain remover, color protector",
+        "Works in all machines"
+      ],
+      "attributes.weight": "1460g"
+    },
+    "images": [
+      { "url": "https://example.com/images/tide-pods.jpg", "isPrimary": true, "width": 800, "height": 800 }
+    ],
+    "externalReference": "fixture-household-001"
+  },
+  {
+    "id": "fixture-household-002",
+    "matchBy": { "gtin": "044600067309", "upc": "044600067309" },
+    "confidence": 0.92,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Clorox Disinfecting Wipes Bleach-Free Cleaning and Disinfecting Crisp Lemon 75 Count",
+      "identity.brand": "Clorox",
+      "identity.manufacturer": "Clorox",
+      "identity.model": "31122",
+      "identifiers.mpn": "31122",
+      "classification.category": "Household",
+      "classification.subcategory": "Cleaning",
+      "classification.taxonomyPath": ["Household", "Cleaning", "Disinfecting Wipes"],
+      "description": "Disinfecting wipes that kill 99.9% of viruses and bacteria.",
+      "bullets": [
+        "75 count",
+        "Crisp Lemon scent",
+        "Kills 99.9% of viruses and bacteria",
+        "Bleach-free"
+      ],
+      "attributes.weight": "650g"
+    },
+    "images": [
+      { "url": "https://example.com/images/clorox-wipes.jpg", "isPrimary": true, "width": 800, "height": 800 }
+    ],
+    "externalReference": "fixture-household-002"
+  }
+]

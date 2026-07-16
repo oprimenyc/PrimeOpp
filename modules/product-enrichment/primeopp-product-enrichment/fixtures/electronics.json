@@ -1,0 +1,64 @@
+[
+  {
+    "id": "fixture-electronics-001",
+    "matchBy": { "gtin": "027242873826", "upc": "027242873826", "brand": "Sony", "model": "WH-1000XM4" },
+    "confidence": 0.97,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Sony WH-1000XM4 Wireless Noise Cancelling Over-Ear Headphones",
+      "identity.brand": "Sony",
+      "identity.manufacturer": "Sony",
+      "identity.model": "WH-1000XM4",
+      "identifiers.mpn": "WH1000XM4B",
+      "classification.category": "Electronics",
+      "classification.subcategory": "Headphones",
+      "classification.taxonomyPath": ["Electronics", "Audio", "Headphones", "Over-Ear"],
+      "description": "Industry-leading noise cancellation with up to 30 hours of battery life and crystal-clear hands-free calling.",
+      "bullets": [
+        "Industry-leading noise cancellation",
+        "Up to 30-hour battery life",
+        "Quick charging: 10 min for 5 hours of playback",
+        "Touch sensor controls",
+        "Speak-to-chat technology"
+      ],
+      "attributes.color": "Black",
+      "attributes.weight": "254g",
+      "attributes.dimensions": "9.94x7.91x3.94in",
+      "attributes.connectivity": "Bluetooth 5.0"
+    },
+    "images": [
+      { "url": "https://example.com/images/sony-wh-1000xm4-front.jpg", "isPrimary": true, "width": 1000, "height": 1000 },
+      { "url": "https://example.com/images/sony-wh-1000xm4-side.jpg", "width": 1000, "height": 800 }
+    ],
+    "externalReference": "fixture-electronics-001"
+  },
+  {
+    "id": "fixture-electronics-002",
+    "matchBy": { "gtin": "0190252632574", "brand": "Apple", "model": "MV7N2AM/A" },
+    "confidence": 0.96,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Apple AirPods Pro (2nd Generation) with MagSafe Charging Case",
+      "identity.brand": "Apple",
+      "identity.manufacturer": "Apple Inc.",
+      "identity.model": "MV7N2AM/A",
+      "identifiers.mpn": "MV7N2",
+      "classification.category": "Electronics",
+      "classification.subcategory": "Earbuds & In-Ear",
+      "classification.taxonomyPath": ["Electronics", "Audio", "Earbuds & In-Ear"],
+      "description": "AirPods Pro feature up to 2x more Active Noise Cancellation, Adaptive Transparency, and personalized spatial audio.",
+      "bullets": [
+        "Active Noise Cancellation",
+        "Adaptive Transparency",
+        "Personalized Spatial Audio",
+        "Up to 6 hours of listening time"
+      ],
+      "attributes.color": "White",
+      "attributes.weight": "56g"
+    },
+    "images": [
+      { "url": "https://example.com/images/airpods-pro-front.jpg", "isPrimary": true, "width": 1000, "height": 1000 }
+    ],
+    "externalReference": "fixture-electronics-002"
+  }
+]

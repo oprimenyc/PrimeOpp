@@ -1,0 +1,13 @@
+[
+  {
+    "id": "fixture-incomplete-001",
+    "matchBy": { "gtin": "051234567890" },
+    "confidence": 0.6,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Generic Unknown Brand Product",
+      "identity.brand": "Unknown"
+    },
+    "externalReference": "fixture-incomplete-001"
+  }
+]

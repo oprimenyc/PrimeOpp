@@ -1,0 +1,52 @@
+{
+  "name": "primeopp-product-enrichment",
+  "version": "1.0.0",
+  "description": "Provider-neutral product enrichment module for the PrimeOpp commerce-intelligence pipeline. Accepts normalized intake records and produces an evidence-backed, conflict-aware enriched product profile.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "INTEGRATION.md",
+    "PROVIDERS.md",
+    "VERIFICATION.md",
+    "module.manifest.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register tests/run-all.ts",
+    "test:raw": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register tests/run-all.ts",
+    "example:barcode": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/barcode-enrichment.ts",
+    "example:isbn": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/isbn-enrichment.ts",
+    "example:brand-model": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/brand-model-enrichment.ts",
+    "example:manual": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/manual-enrichment.ts",
+    "example:multi-provider": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/multi-provider-merge.ts",
+    "example:conflict": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/conflict-detection.ts",
+    "example:cache": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/cache-usage.ts",
+    "example:downstream": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/downstream-handoff.ts",
+    "examples:all": "TS_NODE_PROJECT=tsconfig.test.json node --require ts-node/register examples/run-all.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "primeopp",
+    "product",
+    "enrichment",
+    "barcode",
+    "isbn",
+    "gtin",
+    "upc",
+    "provider-neutral",
+    "commerce",
+    "intelligence"
+  ]
+}

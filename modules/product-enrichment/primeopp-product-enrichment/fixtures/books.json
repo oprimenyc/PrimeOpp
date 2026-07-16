@@ -1,0 +1,82 @@
+[
+  {
+    "id": "fixture-book-001",
+    "matchBy": { "isbn": "9780132350884", "gtin": "9780132350884" },
+    "confidence": 0.96,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+      "identity.brand": "Prentice Hall",
+      "identity.manufacturer": "Pearson Education",
+      "identifiers.mpn": "9780132350884",
+      "classification.category": "Books",
+      "classification.subcategory": "Computing & Information Technology",
+      "classification.taxonomyPath": ["Books", "Computing & Information Technology", "Software Engineering"],
+      "description": "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees. This book is about writing code that is clear, correct, and maintainable.",
+      "bullets": [
+        "Paperback, 464 pages",
+        "Author: Robert C. Martin",
+        "Published: August 2008"
+      ],
+      "attributes.authors": ["Robert C. Martin"],
+      "attributes.pageCount": 464,
+      "attributes.language": "English"
+    },
+    "images": [
+      { "url": "https://example.com/images/clean-code-cover.jpg", "isPrimary": true, "width": 600, "height": 900 }
+    ],
+    "externalReference": "9780132350884",
+    "rawReferenceId": "9780132350884"
+  },
+  {
+    "id": "fixture-book-002",
+    "matchBy": { "isbn": "0132350882", "gtin": "9780132350884" },
+    "confidence": 0.95,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "Clean Code: A Handbook of Agile Software Craftsmanship",
+      "identity.brand": "Prentice Hall",
+      "identity.manufacturer": "Pearson Education",
+      "identifiers.mpn": "0132350882",
+      "classification.category": "Books",
+      "classification.subcategory": "Computing & Information Technology",
+      "classification.taxonomyPath": ["Books", "Computing & Information Technology", "Software Engineering"],
+      "description": "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees.",
+      "attributes.authors": ["Robert C. Martin"],
+      "attributes.pageCount": 464
+    },
+    "images": [
+      { "url": "https://example.com/images/clean-code-cover.jpg", "isPrimary": true, "width": 600, "height": 900 }
+    ],
+    "externalReference": "0132350882",
+    "rawReferenceId": "0132350882"
+  },
+  {
+    "id": "fixture-book-003",
+    "matchBy": { "isbn": "9780061120084", "gtin": "9780061120084" },
+    "confidence": 0.95,
+    "exactMatch": true,
+    "fields": {
+      "identity.canonicalTitle": "To Kill a Mockingbird",
+      "identity.brand": "Harper Perennial",
+      "identity.manufacturer": "HarperCollins",
+      "identifiers.mpn": "9780061120084",
+      "classification.category": "Books",
+      "classification.subcategory": "Fiction",
+      "classification.taxonomyPath": ["Books", "Fiction", "Classics"],
+      "description": "Harper Lee's Pulitzer Prize-winning masterwork of honor and injustice in the deep South.",
+      "bullets": [
+        "Paperback, 336 pages",
+        "Author: Harper Lee",
+        "Published: 1960"
+      ],
+      "attributes.authors": ["Harper Lee"],
+      "attributes.pageCount": 336,
+      "attributes.language": "English"
+    },
+    "images": [
+      { "url": "https://example.com/images/to-kill-a-mockingbird.jpg", "isPrimary": true, "width": 600, "height": 900 }
+    ],
+    "externalReference": "9780061120084"
+  }
+]
