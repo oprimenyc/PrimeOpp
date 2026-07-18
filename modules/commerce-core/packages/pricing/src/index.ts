@@ -124,6 +124,170 @@ export function createPricingObservation(opts: {
   };
 }
 
+export type MarketplaceComparablePricingCondition =
+  | 'NEW'
+  | 'LIKE_NEW'
+  | 'EXCELLENT'
+  | 'GOOD'
+  | 'FAIR'
+  | 'POOR'
+  | 'USED'
+  | 'UNKNOWN';
+
+export interface MarketplaceComparablePricingMoney {
+  readonly amount: string;
+  readonly currency: string;
+}
+
+export interface MarketplaceComparablePricingRecord {
+  readonly marketplaceId: string;
+  readonly listingId: string;
+  readonly rawTitle: string;
+  readonly condition: MarketplaceComparablePricingCondition;
+  readonly askingPrice: MarketplaceComparablePricingMoney | null;
+  readonly soldPrice: MarketplaceComparablePricingMoney | null;
+  readonly shippingCost: MarketplaceComparablePricingMoney | null;
+  readonly marketplaceFees: MarketplaceComparablePricingMoney | null;
+  readonly listingStatus: 'ACTIVE_LISTING' | 'SOLD_COMPARABLE';
+  readonly soldDate: string | null;
+  readonly evidenceTimestamp?: string;
+  readonly url?: string;
+}
+
+export interface MarketplaceComparablePricingSet {
+  readonly activeListings: readonly MarketplaceComparablePricingRecord[];
+  readonly soldComparables: readonly MarketplaceComparablePricingRecord[];
+}
+
+export interface PricingInputFromMarketplaceComparablesResult {
+  readonly input: PricingInput;
+  readonly warnings: readonly string[];
+  readonly rejected: readonly string[];
+}
+
+function parseMarketplaceMoney(value: MarketplaceComparablePricingMoney | null): Money | null {
+  if (value === null) return null;
+  const amount = Number(value.amount);
+  if (!Number.isFinite(amount) || amount < 0 || value.currency.trim() === '') return null;
+  return {
+    amount: roundTo(amount, 2),
+    currency: value.currency.trim().toUpperCase(),
+    precise: false,
+    status: 'ESTIMATED'
+  };
+}
+
+function mapComparableCondition(
+  comparableCondition: MarketplaceComparablePricingCondition,
+  fallback: CanonicalCondition
+): CanonicalCondition {
+  if (comparableCondition === 'USED' || comparableCondition === 'UNKNOWN') return fallback;
+  return comparableCondition;
+}
+
+function observationFromComparable(opts: {
+  comparable: MarketplaceComparablePricingRecord;
+  productId: string;
+  variantId?: string;
+  condition: CanonicalCondition;
+  scope: TenantScoped;
+  confidence: Confidence;
+}): { observation?: PricingObservation; warning?: string; rejected?: string } {
+  const price = opts.comparable.listingStatus === 'SOLD_COMPARABLE'
+    ? parseMarketplaceMoney(opts.comparable.soldPrice)
+    : parseMarketplaceMoney(opts.comparable.askingPrice);
+
+  if (price === null) {
+    return {
+      rejected: `comparable ${opts.comparable.marketplaceId}:${opts.comparable.listingId} rejected: missing valid ${opts.comparable.listingStatus === 'SOLD_COMPARABLE' ? 'soldPrice' : 'askingPrice'}`
+    };
+  }
+
+  const observedAt = opts.comparable.evidenceTimestamp ?? opts.comparable.soldDate ?? nowUtc();
+  const observedDate = new Date(observedAt);
+  if (Number.isNaN(observedDate.getTime())) {
+    return {
+      rejected: `comparable ${opts.comparable.marketplaceId}:${opts.comparable.listingId} rejected: invalid observation timestamp`
+    };
+  }
+
+  const sourceRef = `${opts.comparable.marketplaceId}:${opts.comparable.listingId}`;
+  const observation = createPricingObservation({
+    productId: opts.productId,
+    ...(opts.variantId ? { variantId: opts.variantId } : {}),
+    condition: mapComparableCondition(opts.comparable.condition, opts.condition),
+    price,
+    ...(opts.comparable.shippingCost ? { shipping: parseMarketplaceMoney(opts.comparable.shippingCost) ?? undefined } : {}),
+    ...(opts.comparable.marketplaceFees ? { feesIfKnown: parseMarketplaceMoney(opts.comparable.marketplaceFees) ?? undefined } : {}),
+    currency: price.currency,
+    quantity: 1,
+    source: opts.comparable.listingStatus === 'SOLD_COMPARABLE' ? 'MARKETPLACE_SOLD_LISTING' : 'MARKETPLACE_ACTIVE_LISTING',
+    sourceRef,
+    listingStatus: opts.comparable.listingStatus === 'SOLD_COMPARABLE' ? 'SOLD' : 'ACTIVE',
+    ...(opts.comparable.soldDate ? { soldAt: opts.comparable.soldDate } : {}),
+    confidence: opts.confidence,
+    evidenceRefs: opts.comparable.url ? [opts.comparable.url] : [],
+    scope: opts.scope
+  });
+
+  return {
+    observation: {
+      ...observation,
+      observedAt: observedDate.toISOString(),
+      freshnessSeconds: Math.max(0, (Date.now() - observedDate.getTime()) / 1000),
+      createdAt: observedDate.toISOString(),
+      updatedAt: observedDate.toISOString()
+    },
+    warning: opts.comparable.condition === 'UNKNOWN'
+      ? `comparable ${sourceRef} used requested product condition because source condition was unknown`
+      : undefined
+  };
+}
+
+export function buildPricingInputFromMarketplaceComparables(opts: {
+  productId: string;
+  variantId?: string;
+  condition: CanonicalCondition;
+  comparableSet: MarketplaceComparablePricingSet;
+  strategy: PricingStrategy;
+  scope: TenantScoped;
+  confidence?: Confidence;
+}): PricingInputFromMarketplaceComparablesResult {
+  const warnings: string[] = [];
+  const rejected: string[] = [];
+  const activeComps: PricingObservation[] = [];
+  const soldComps: PricingObservation[] = [];
+  const confidence = clamp01(opts.confidence ?? 0.8);
+
+  for (const comparable of opts.comparableSet.activeListings) {
+    const result = observationFromComparable({ ...opts, comparable, confidence });
+    if (result.observation) activeComps.push(result.observation);
+    if (result.warning) warnings.push(result.warning);
+    if (result.rejected) rejected.push(result.rejected);
+  }
+
+  for (const comparable of opts.comparableSet.soldComparables) {
+    const result = observationFromComparable({ ...opts, comparable, confidence });
+    if (result.observation) soldComps.push(result.observation);
+    if (result.warning) warnings.push(result.warning);
+    if (result.rejected) rejected.push(result.rejected);
+  }
+
+  return {
+    input: {
+      productId: opts.productId,
+      ...(opts.variantId ? { variantId: opts.variantId } : {}),
+      condition: opts.condition,
+      activeComps,
+      soldComps,
+      strategy: opts.strategy,
+      scope: opts.scope
+    },
+    warnings,
+    rejected
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Stats helpers
 // ---------------------------------------------------------------------------

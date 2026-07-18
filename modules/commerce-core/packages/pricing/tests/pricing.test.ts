@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { priceProduct, createPricingObservation, groupObservations, observationsAreComparable } from '../src/index.ts';
+import { priceProduct, createPricingObservation, groupObservations, observationsAreComparable, buildPricingInputFromMarketplaceComparables } from '../src/index.ts';
 
 test('priceProduct with no comps returns zero-confidence range', () => {
   const r = priceProduct({
@@ -99,4 +99,107 @@ test('groupObservations filters cross-tenant', () => {
   const g = groupObservations(obs, { productId: 'p1', condition: 'GOOD', scope: { tenantId: 't1' } });
   assert.equal(g.sold.length, 0);
   assert.ok(g.warnings.length > 0);
+});
+
+test('buildPricingInputFromMarketplaceComparables wires normalized marketplace comps into pricing', () => {
+  const built = buildPricingInputFromMarketplaceComparables({
+    productId: 'p-market',
+    condition: 'GOOD',
+    strategy: 'BALANCED',
+    scope: { tenantId: 't1' },
+    comparableSet: {
+      activeListings: [
+        {
+          marketplaceId: 'ebay',
+          listingId: 'active-1',
+          rawTitle: 'Active comp',
+          condition: 'GOOD',
+          askingPrice: { amount: '140.00', currency: 'USD' },
+          soldPrice: null,
+          shippingCost: null,
+          marketplaceFees: null,
+          listingStatus: 'ACTIVE_LISTING',
+          soldDate: null,
+          evidenceTimestamp: '2026-07-01T00:00:00.000Z'
+        }
+      ],
+      soldComparables: [
+        {
+          marketplaceId: 'ebay',
+          listingId: 'sold-1',
+          rawTitle: 'Sold comp 1',
+          condition: 'GOOD',
+          askingPrice: null,
+          soldPrice: { amount: '100.00', currency: 'USD' },
+          shippingCost: { amount: '8.00', currency: 'USD' },
+          marketplaceFees: null,
+          listingStatus: 'SOLD_COMPARABLE',
+          soldDate: '2026-06-01T00:00:00.000Z',
+          evidenceTimestamp: '2026-06-02T00:00:00.000Z'
+        },
+        {
+          marketplaceId: 'ebay',
+          listingId: 'sold-2',
+          rawTitle: 'Sold comp 2',
+          condition: 'GOOD',
+          askingPrice: null,
+          soldPrice: { amount: '120.00', currency: 'USD' },
+          shippingCost: null,
+          marketplaceFees: null,
+          listingStatus: 'SOLD_COMPARABLE',
+          soldDate: '2026-06-03T00:00:00.000Z'
+        },
+        {
+          marketplaceId: 'ebay',
+          listingId: 'sold-3',
+          rawTitle: 'Sold comp 3',
+          condition: 'GOOD',
+          askingPrice: null,
+          soldPrice: { amount: '110.00', currency: 'USD' },
+          shippingCost: null,
+          marketplaceFees: null,
+          listingStatus: 'SOLD_COMPARABLE',
+          soldDate: '2026-06-04T00:00:00.000Z'
+        }
+      ]
+    }
+  });
+
+  assert.equal(built.rejected.length, 0);
+  assert.equal(built.input.activeComps.length, 1);
+  assert.equal(built.input.soldComps.length, 3);
+
+  const priced = priceProduct(built.input);
+  assert.equal(priced.estimatedMarketValue.midpoint.amount, 110);
+  assert.equal(priced.comparableCount, 4);
+});
+
+test('buildPricingInputFromMarketplaceComparables rejects malformed comp prices without inventing observations', () => {
+  const built = buildPricingInputFromMarketplaceComparables({
+    productId: 'p-market',
+    condition: 'GOOD',
+    strategy: 'BALANCED',
+    scope: { tenantId: 't1' },
+    comparableSet: {
+      activeListings: [
+        {
+          marketplaceId: 'depop',
+          listingId: 'bad-active',
+          rawTitle: 'Bad active',
+          condition: 'GOOD',
+          askingPrice: { amount: 'not-a-number', currency: 'USD' },
+          soldPrice: null,
+          shippingCost: null,
+          marketplaceFees: null,
+          listingStatus: 'ACTIVE_LISTING',
+          soldDate: null
+        }
+      ],
+      soldComparables: []
+    }
+  });
+
+  assert.equal(built.input.activeComps.length, 0);
+  assert.equal(built.input.soldComps.length, 0);
+  assert.equal(built.rejected.length, 1);
 });
