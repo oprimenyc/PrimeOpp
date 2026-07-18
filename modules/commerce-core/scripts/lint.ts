@@ -1,8 +1,9 @@
 // Simple lint: checks for forbidden patterns.
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('../', import.meta.url).pathname;
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const FORBIDDEN_PATTERNS = [
   { pattern: /\|\|\s*true\b/, msg: 'swallowed `|| true`' },
   { pattern: /\bTODO\b/, msg: 'TODO comment' },

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateProfit, computeTargetBuyPrice } from '../src/index.ts';
+import { calculateProfit, computeTargetBuyPrice, decideProfitOpportunity } from '../src/index.ts';
 
 test('calculateProfit produces positive ROI on profitable sale', () => {
   const r = calculateProfit({
@@ -106,4 +106,47 @@ test('calculateProfit reports currency mismatch warning', () => {
     scope: { tenantId: 't1' },
   });
   assert.ok(r.warnings.some((w) => w.includes('currency')));
+});
+
+test('decideProfitOpportunity returns deterministic BUY decision for strong metrics', () => {
+  const r = calculateProfit({
+    productId: 'p1',
+    listingPrice: { amount: 100, currency: 'USD', precise: true, status: 'ACTUAL' },
+    costBasis: { amount: 50, currency: 'USD', precise: true, status: 'ACTUAL' },
+    inboundCost: { amount: 5, currency: 'USD', precise: true, status: 'ACTUAL' },
+    feeAssessment: {
+      scheduleRef: 's1',
+      scheduleVersion: '1',
+      basis: { amount: 100, currency: 'USD', precise: true, status: 'AUTHORITATIVE' },
+      lineItems: [
+        { type: 'MARKETPLACE_COMMISSION', amount: { amount: 8, currency: 'USD', precise: true, status: 'AUTHORITATIVE' }, model: 'PERCENTAGE', rate: 0.08 }
+      ],
+      total: { amount: 8, currency: 'USD', precise: true, status: 'AUTHORITATIVE' },
+      estimated: false,
+      staleWarnings: []
+    },
+    taxTreatment: 'EXCLUDED',
+    scope: { tenantId: 't1' }
+  });
+
+  const decision = decideProfitOpportunity(r);
+  assert.equal(decision.decision, 'BUY');
+  assert.equal(decision.blockers.length, 0);
+  assert.equal(decision.marginPct, 37);
+  assert.equal(decision.roiPct, 58.73);
+});
+
+test('decideProfitOpportunity blocks non-positive profit', () => {
+  const r = calculateProfit({
+    productId: 'p1',
+    listingPrice: { amount: 50, currency: 'USD', precise: true, status: 'ACTUAL' },
+    costBasis: { amount: 50, currency: 'USD', precise: true, status: 'ACTUAL' },
+    inboundCost: { amount: 5, currency: 'USD', precise: true, status: 'ACTUAL' },
+    taxTreatment: 'EXCLUDED',
+    scope: { tenantId: 't1' }
+  });
+
+  const decision = decideProfitOpportunity(r);
+  assert.equal(decision.decision, 'PASS');
+  assert.ok(decision.blockers.some((blocker) => blocker.code === 'NON_POSITIVE_NET_PROFIT'));
 });

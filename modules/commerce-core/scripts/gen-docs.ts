@@ -1,8 +1,9 @@
 // Generate all required documentation files.
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('../', import.meta.url).pathname;
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const docsDir = join(ROOT, 'docs');
 if (!existsSync(docsDir)) mkdirSync(docsDir, { recursive: true });
 

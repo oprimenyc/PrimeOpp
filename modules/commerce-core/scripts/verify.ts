@@ -3,7 +3,8 @@
 
 import { spawnSync } from 'node:child_process';
 import { writeFileSync, mkdirSync, existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createSdk } from '@primeopp/sdk';
 import { validateBarcode, toBarcodePayload, createScanEvent } from '@primeopp/barcode';
 import { assessCondition } from '@primeopp/condition-engine';
@@ -20,7 +21,7 @@ import { defaultPrimeOppMarketplaceFeeSchedule } from '@primeopp/fee-engine';
 import { estimateShipping, buildPackageSpec } from '@primeopp/shipping-estimator';
 import { allJsonSchemas, validateMoney, validateProductIdentifier, validateCanonicalCondition, validateBarcodeFormat } from '@primeopp/schemas';
 
-const ROOT = new URL('../', import.meta.url).pathname;
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const evidenceDir = join(ROOT, 'evidence');
 if (!existsSync(evidenceDir)) mkdirSync(evidenceDir, { recursive: true });
 

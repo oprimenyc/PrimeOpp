@@ -1,9 +1,10 @@
 // Typecheck all packages in dependency order.
 import { spawnSync } from 'node:child_process';
 import { readdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('../', import.meta.url).pathname;
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const packagesDir = join(ROOT, 'packages');
 const all = readdirSync(packagesDir).filter((d) => existsSync(join(packagesDir, d, 'tsconfig.json')));
 

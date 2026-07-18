@@ -6,8 +6,36 @@ import type {
   ProfitInput,
   ProfitResult,
   TenantScoped,
+  Warning,
 } from '@primeopp/contracts';
 import { roundTo } from '@primeopp/contracts';
+
+export type ProfitDecision = 'BUY' | 'MARGINAL' | 'PASS' | 'BLOCKED';
+
+export interface ProfitDecisionThresholds {
+  buyMarginPercent: number;
+  buyRoiPercent: number;
+  marginalMarginPercent: number;
+  marginalRoiPercent: number;
+}
+
+export interface ProfitDecisionResult {
+  decision: ProfitDecision;
+  reason: string;
+  blockers: Warning[];
+  warnings: Warning[];
+  grossProfit: Money;
+  netProfit: Money;
+  marginPct: number;
+  roiPct: number;
+}
+
+const DEFAULT_DECISION_THRESHOLDS: ProfitDecisionThresholds = {
+  buyMarginPercent: 15,
+  buyRoiPercent: 20,
+  marginalMarginPercent: 5,
+  marginalRoiPercent: 10
+};
 
 function money(amount: number, currency: string, status: EpistemicStatus = 'ESTIMATED'): Money {
   return { amount: roundTo(amount, 2), currency, precise: false, status };
@@ -151,6 +179,87 @@ export function calculateProfit(input: ProfitInput): ProfitResult {
     ...(annualizedReturn !== undefined ? { annualizedReturn } : {}),
     statuses,
     warnings,
+  };
+}
+
+export function decideProfitOpportunity(
+  result: ProfitResult,
+  thresholds: ProfitDecisionThresholds = DEFAULT_DECISION_THRESHOLDS
+): ProfitDecisionResult {
+  const marginPct = roundTo(result.margin * 100, 2);
+  const roiPct = roundTo(result.roi * 100, 2);
+  const grossProfit = money(result.grossRevenue.amount - result.productCost.amount, result.grossRevenue.currency, result.netProfit.status);
+  const blockers: Warning[] = [];
+  const warnings: Warning[] = result.warnings.map((message) => ({
+    code: 'PROFIT_INPUT_WARNING',
+    message,
+    severity: 'MEDIUM'
+  }));
+
+  if (result.netProfit.amount <= 0) {
+    blockers.push({
+      code: 'NON_POSITIVE_NET_PROFIT',
+      message: 'Net profit is zero or negative.',
+      severity: 'HIGH'
+    });
+  }
+
+  if (result.netProfit.status === 'UNKNOWN') {
+    blockers.push({
+      code: 'UNKNOWN_PROFIT_STATUS',
+      message: 'Net profit contains unknown values.',
+      severity: 'HIGH'
+    });
+  }
+
+  if (blockers.length > 0) {
+    return {
+      decision: 'PASS',
+      reason: blockers[0]!.message,
+      blockers,
+      warnings,
+      grossProfit,
+      netProfit: result.netProfit,
+      marginPct,
+      roiPct
+    };
+  }
+
+  if (marginPct >= thresholds.buyMarginPercent && roiPct >= thresholds.buyRoiPercent) {
+    return {
+      decision: 'BUY',
+      reason: 'Net profit, margin, and ROI meet buy thresholds.',
+      blockers,
+      warnings,
+      grossProfit,
+      netProfit: result.netProfit,
+      marginPct,
+      roiPct
+    };
+  }
+
+  if (marginPct >= thresholds.marginalMarginPercent || roiPct >= thresholds.marginalRoiPercent) {
+    return {
+      decision: 'MARGINAL',
+      reason: 'Opportunity meets marginal margin or ROI threshold.',
+      blockers,
+      warnings,
+      grossProfit,
+      netProfit: result.netProfit,
+      marginPct,
+      roiPct
+    };
+  }
+
+  return {
+    decision: 'PASS',
+    reason: 'Margin and ROI are below minimum thresholds.',
+    blockers,
+    warnings,
+    grossProfit,
+    netProfit: result.netProfit,
+    marginPct,
+    roiPct
   };
 }
 

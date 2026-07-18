@@ -1,9 +1,10 @@
 // Package the workspace into primeopp-commerce-core.zip
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('../', import.meta.url).pathname;
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const downloadDir = '/home/z/my-project/download';
 if (!existsSync(downloadDir)) mkdirSync(downloadDir, { recursive: true });
 

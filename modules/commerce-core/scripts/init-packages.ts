@@ -1,8 +1,9 @@
 // Generates standard package.json and tsconfig.json for every workspace package.
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('../packages/', import.meta.url).pathname;
+const ROOT = join(dirname(dirname(fileURLToPath(import.meta.url))), 'packages');
 const PKGS = [
   'contracts', 'schemas', 'product-identity', 'barcode', 'ocr-contracts',
   'image-match-contracts', 'canonical-catalog', 'variant-engine', 'condition-engine',
