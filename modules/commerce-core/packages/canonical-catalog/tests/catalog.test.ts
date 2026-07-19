@@ -1,7 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { InMemoryCatalogStorage, CanonicalCatalog, InMemoryCatalogAuditLog, detectStaleProducts, detectDuplicates } from '../src/index.ts';
+import {
+  buildCanonicalProductFromResolutionResult,
+  createCanonicalProductFromResolutionResult,
+  InMemoryCatalogStorage,
+  CanonicalCatalog,
+  InMemoryCatalogAuditLog,
+  detectStaleProducts,
+  detectDuplicates,
+} from '../src/index.ts';
 import type { Product } from '@primeopp/contracts';
+import type { ResolutionResult } from '@primeopp/product-identity';
+import { toBarcodePayload } from '@primeopp/barcode';
 
 function fixtureProduct(id: string, tenantId = 't1'): Product {
   return {
@@ -16,6 +26,45 @@ function fixtureProduct(id: string, tenantId = 't1'): Product {
     evidence: { evidenceRefs: [], confidence: 0.9 },
     confidence: { overall: 0.9, identity: 0.9, variant: 0.9, condition: 0.8, pricing: 0.85 },
     version: 0, tenantId, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  };
+}
+
+function noMatchResolution(overrides: Partial<ResolutionResult> = {}): ResolutionResult {
+  return {
+    id: 'resolution-1',
+    tenantId: 't1',
+    input: {
+      barcode: toBarcodePayload('036000291452'),
+      title: 'Apple iPhone 13 128GB',
+      brand: 'Apple',
+      model: 'iPhone 13',
+      category: 'Electronics > Phones',
+    },
+    state: 'NO_MATCH',
+    candidates: [],
+    explanation: ['state=NO_MATCH'],
+    warnings: [],
+    recommendedNextAction: 'create a new canonical product record',
+    confidence: 0,
+    evidenceRefs: ['scan:evidence-1'],
+    createdAt: '2026-01-02T00:00:00Z',
+    updatedAt: '2026-01-02T00:00:00Z',
+    ...overrides,
+  };
+}
+
+function creationContext() {
+  return {
+    actor: 'host-user-1',
+    ownership: { tenantId: 't1', private: true },
+    kind: 'PHYSICAL' as const,
+    listingState: 'UNLISTED' as const,
+    fulfillmentMode: 'SELLER_FULFILLED' as const,
+    source: {
+      kind: 'SCAN' as const,
+      ref: 'scan:event-1',
+      observedAt: '2026-01-02T00:00:00Z',
+    },
   };
 }
 
@@ -140,4 +189,103 @@ test('catalog audit log records operations', async () => {
   assert.equal(entries.length, 1);
   assert.equal(entries[0].action, 'CREATE');
   assert.equal(entries[0].actor, 'actor1');
+});
+
+test('buildCanonicalProductFromResolutionResult creates minimal product from NO_MATCH resolution and host context', () => {
+  const { product, warnings } = buildCanonicalProductFromResolutionResult(noMatchResolution(), creationContext());
+  assert.equal(product.tenantId, 't1');
+  assert.equal(product.ownership.tenantId, 't1');
+  assert.equal(product.kind, 'PHYSICAL');
+  assert.equal(product.listingState, 'UNLISTED');
+  assert.equal(product.fulfillmentMode, 'SELLER_FULFILLED');
+  assert.equal(product.title, 'Apple iPhone 13 128GB');
+  assert.equal(product.brand?.normalized, 'APPLE');
+  assert.equal(product.model?.normalized, 'IPHONE 13');
+  assert.equal(product.category?.leaf, 'Phones');
+  assert.equal(product.source.kind, 'SCAN');
+  assert.equal(product.source.ref, 'scan:event-1');
+  assert.deepEqual(product.identifiers.map((i) => [i.type, i.value, i.verification]), [
+    ['UPC_A', '036000291452', 'CHECK_DIGIT_VALID'],
+  ]);
+  assert.deepEqual(warnings, []);
+});
+
+test('buildCanonicalProductFromResolutionResult is deterministic for identical inputs', () => {
+  const first = buildCanonicalProductFromResolutionResult(noMatchResolution(), creationContext()).product;
+  const second = buildCanonicalProductFromResolutionResult(noMatchResolution(), creationContext()).product;
+  assert.deepEqual(first, second);
+});
+
+test('deterministic product id is based on resolved identity, not source event metadata', () => {
+  const first = buildCanonicalProductFromResolutionResult(noMatchResolution(), creationContext()).product;
+  const second = buildCanonicalProductFromResolutionResult(noMatchResolution(), {
+    ...creationContext(),
+    source: {
+      kind: 'AI_ENRICHMENT',
+      ref: 'enrichment:event-2',
+      observedAt: '2026-01-03T00:00:00Z',
+      confidence: 0.4,
+    },
+  }).product;
+  assert.equal(first.id, second.id);
+});
+
+test('createCanonicalProductFromResolutionResult calls CanonicalCatalog.create', async () => {
+  const storage = new InMemoryCatalogStorage();
+  const audit = new InMemoryCatalogAuditLog();
+  const catalog = new CanonicalCatalog({ storage, auditLog: audit });
+  const { product } = await createCanonicalProductFromResolutionResult(catalog, noMatchResolution(), creationContext());
+  const stored = await catalog.get(product.id, { tenantId: 't1' });
+  assert.equal(stored?.id, product.id);
+  assert.equal(audit.list('t1', product.id)[0].action, 'CREATE');
+});
+
+test('canonical product creation rejects resolution states with candidates', () => {
+  const resolution = noMatchResolution({
+    state: 'EXACT_MATCH',
+    candidates: [{
+      productId: 'existing',
+      confidence: 1,
+      matchedFields: ['barcode'],
+      conflictingFields: [],
+      missingFields: [],
+      evidenceRefs: [],
+      source: 'fixture',
+    }],
+    selectedCandidateId: 'existing',
+  });
+  assert.throws(
+    () => buildCanonicalProductFromResolutionResult(resolution, creationContext()),
+    /only NO_MATCH/
+  );
+});
+
+test('canonical product creation rejects tenant scope mismatch', () => {
+  assert.throws(
+    () => buildCanonicalProductFromResolutionResult(noMatchResolution(), {
+      ...creationContext(),
+      ownership: { tenantId: 'other', private: true },
+    }),
+    /TENANT_SCOPE_MISMATCH/
+  );
+});
+
+test('canonical product creation rejects missing product title', () => {
+  const resolution = noMatchResolution({ input: { barcode: toBarcodePayload('036000291452') } });
+  assert.throws(
+    () => buildCanonicalProductFromResolutionResult(resolution, creationContext()),
+    /CANONICAL_PRODUCT_TITLE_REQUIRED/
+  );
+});
+
+test('canonical product creation preserves invalid barcode as explicit warning', () => {
+  const resolution = noMatchResolution({
+    input: {
+      barcode: toBarcodePayload('000000000001'),
+      title: 'Barcode-only known product',
+    },
+  });
+  const { product, warnings } = buildCanonicalProductFromResolutionResult(resolution, creationContext());
+  assert.equal(product.identifiers[0].verification, 'INVALID');
+  assert.match(warnings[0], /invalid check digit/);
 });
