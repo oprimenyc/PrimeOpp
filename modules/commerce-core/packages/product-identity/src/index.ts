@@ -11,7 +11,7 @@ import type {
   Timestamped,
 } from '@primeopp/contracts';
 import { clamp01, hashString, nowUtc, uuid } from '@primeopp/contracts';
-import type { BarcodePayload, BarcodeLookupResult } from '@primeopp/contracts';
+import type { BarcodeFormat, BarcodePayload, BarcodeLookupResult } from '@primeopp/contracts';
 import type { OCRResult, ImageMatchResult } from '@primeopp/contracts';
 import { detectFormat, toBarcodePayload } from '@primeopp/barcode';
 
@@ -389,6 +389,18 @@ function primaryBarcodeValue(identifiers: EnrichmentHandoffIdentifiers): string 
   return undefined;
 }
 
+function isGs1OrIsbnFormat(format: BarcodeFormat): boolean {
+  return (
+    format === 'UPC_A'
+    || format === 'UPC_E'
+    || format === 'EAN_8'
+    || format === 'EAN_13'
+    || format === 'GTIN_14'
+    || format === 'ISBN_10'
+    || format === 'ISBN_13'
+  );
+}
+
 /**
  * Convert an enriched product profile into a `ResolutionInput` for
  * `ProductIdentityResolver`. This is the sole handoff point between
@@ -421,7 +433,15 @@ export function buildResolutionInputFromEnrichedProfile(
 
   const barcodeValue = primaryBarcodeValue(profile.identifiers);
   if (barcodeValue) {
-    input.barcode = toBarcodePayload(barcodeValue, detectFormat(barcodeValue));
+    const detectedFormat = detectFormat(barcodeValue);
+    if (isGs1OrIsbnFormat(detectedFormat)) {
+      input.barcode = toBarcodePayload(barcodeValue, detectedFormat);
+    } else {
+      input.text = barcodeValue;
+      warnings.push(
+        `profile ${profile.enrichmentId} has a GTIN/UPC/EAN/ISBN bucket value that detected as ${detectedFormat}; falling back to text search instead of emitting a barcode claim`
+      );
+    }
   } else {
     const fallbackText = profile.identifiers.mpn?.find((v) => v.trim().length > 0)
       ?? profile.identifiers.sku?.find((v) => v.trim().length > 0);

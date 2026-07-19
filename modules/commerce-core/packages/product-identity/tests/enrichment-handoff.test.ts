@@ -54,6 +54,15 @@ test('reports checkDigitValid=false for a UPC with a corrupted check digit (neve
   assert.equal(result.input.barcode?.checkDigitValid, false);
 });
 
+test('falls back to text with a warning when a GTIN bucket value is not GS1/ISBN format', () => {
+  const profile = fixtureProfile({ identifiers: { gtin: ['12345'] } });
+  const result = buildResolutionInputFromEnrichedProfile(profile);
+  assert.equal(result.input.barcode, undefined);
+  assert.equal(result.input.text, '12345');
+  assert.ok(result.warnings.some((w) => w.includes('detected as CODE_128')));
+  assert.ok(result.warnings.some((w) => w.includes('instead of emitting a barcode claim')));
+});
+
 test('prefers GTIN over UPC/EAN/ISBN and selects exactly one barcode identifier', () => {
   const profile = fixtureProfile({
     identifiers: {
