@@ -17,6 +17,7 @@ import "./test-service";
 import "./test-http-provider";
 import "./test-isbn-provider";
 import "./test-manual-provider";
+import "./test-intake-handoff";
 
 runAll().catch((err) => {
   console.error("Fatal test runner error:", err);

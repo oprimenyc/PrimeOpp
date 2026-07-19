@@ -49,6 +49,15 @@ export type {
 
 export type { EnrichmentConflict, EnrichmentConflictCandidate } from "./conflicts/types";
 
+// Intake handoff (reconciliation with primeopp-product-intake)
+export { isEnrichmentEligible, toEnrichmentInput } from "./adapters/intake-handoff";
+export type {
+  IntakeHandoffStatus,
+  IntakeHandoffIdentifier,
+  IntakeHandoffManualProduct,
+  IntakeHandoffRecord,
+} from "./adapters/intake-handoff";
+
 // Options
 export type { EnrichmentOptions } from "./application/options";
 export { defaultEnrichmentOptions } from "./application/options";

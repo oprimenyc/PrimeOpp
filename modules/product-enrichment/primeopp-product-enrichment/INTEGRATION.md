@@ -47,7 +47,7 @@ See `src/index.ts` for the complete list.
 
 ## 2. Shared contract mapping (intake handoff)
 
-The prior module `primeopp-product-intake` is responsible for producing `ProductEnrichmentInput`. The mapping table below assumes the intake module emits something equivalent to its clean-room contract; adapt as needed.
+The prior module `primeopp-product-intake` is responsible for producing `ProductEnrichmentInput`. `src/adapters/intake-handoff.ts` implements this mapping (`toEnrichmentInput()` / `isEnrichmentEligible()`) against a structural `IntakeHandoffRecord` type that mirrors `ProductIntakeRecord`, so this package still does not depend on the intake module's source. If the real intake module's shape diverges from `ProductIntakeRecord`, adapt at the call site before invoking `toEnrichmentInput()`. The mapping table below documents the field-level correspondence this adapter implements.
 
 | Enrichment input field | Intake source | Notes |
 |---|---|---|
