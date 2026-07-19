@@ -113,6 +113,8 @@ export class CanonicalCatalog {
 
   async create(product: Product, actor: string): Promise<Product> {
     if (product.archived) throw new Error('cannot create an archived product');
+    const existing = await this.opts.storage.get(product.tenantId, product.id);
+    if (existing) throw new Error(`CANONICAL_PRODUCT_ALREADY_EXISTS: ${product.id}`);
     await this.opts.storage.upsert(product);
     this.appendAudit(product, 'CREATE', actor, undefined, product);
     return product;

@@ -85,6 +85,18 @@ test('catalog create refuses archived product', async () => {
   await assert.rejects(() => cat.create(p, 'actor'), /archived/);
 });
 
+test('catalog create refuses to overwrite an existing product id', async () => {
+  const storage = new InMemoryCatalogStorage();
+  const cat = new CanonicalCatalog({ storage });
+  await cat.create(fixtureProduct('p1'), 'actor');
+  await assert.rejects(
+    () => cat.create({ ...fixtureProduct('p1'), title: 'Replacement' }, 'actor'),
+    /CANONICAL_PRODUCT_ALREADY_EXISTS/
+  );
+  const stored = await cat.get('p1', { tenantId: 't1' });
+  assert.equal(stored?.title, 'Product p1');
+});
+
 test('catalog update increments version', async () => {
   const storage = new InMemoryCatalogStorage();
   const cat = new CanonicalCatalog({ storage });
@@ -238,6 +250,20 @@ test('createCanonicalProductFromResolutionResult calls CanonicalCatalog.create',
   const stored = await catalog.get(product.id, { tenantId: 't1' });
   assert.equal(stored?.id, product.id);
   assert.equal(audit.list('t1', product.id)[0].action, 'CREATE');
+});
+
+test('createCanonicalProductFromResolutionResult fails loudly instead of overwriting on deterministic id collision', async () => {
+  const storage = new InMemoryCatalogStorage();
+  const catalog = new CanonicalCatalog({ storage });
+  const existing = buildCanonicalProductFromResolutionResult(noMatchResolution(), creationContext()).product;
+  await catalog.create({ ...existing, title: 'Existing canonical record' }, 'actor');
+
+  await assert.rejects(
+    () => createCanonicalProductFromResolutionResult(catalog, noMatchResolution(), creationContext()),
+    /CANONICAL_PRODUCT_ALREADY_EXISTS/
+  );
+  const stored = await catalog.get(existing.id, { tenantId: 't1' });
+  assert.equal(stored?.title, 'Existing canonical record');
 });
 
 test('canonical product creation rejects resolution states with candidates', () => {
