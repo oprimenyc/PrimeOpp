@@ -13,6 +13,7 @@ import type {
 import { clamp01, hashString, nowUtc, uuid } from '@primeopp/contracts';
 import type { BarcodePayload, BarcodeLookupResult } from '@primeopp/contracts';
 import type { OCRResult, ImageMatchResult } from '@primeopp/contracts';
+import { detectFormat, toBarcodePayload } from '@primeopp/barcode';
 
 // ---------------------------------------------------------------------------
 // Resolution states
@@ -304,4 +305,155 @@ export function inputFromOcrAndImage(ocr: OCRResult, imageMatch?: ImageMatchResu
  */
 export function inputFromText(text: string): ResolutionInput {
   return { text };
+}
+
+// ---------------------------------------------------------------------------
+// Enrichment handoff (reconciliation with primeopp-product-enrichment)
+// ---------------------------------------------------------------------------
+
+/**
+ * `primeopp-product-enrichment` is a separate clean-room module (see its own
+ * INTEGRATION.md, section 9 "Downstream marketplace comps handoff", for the
+ * precedent). This package does not depend on that module's source; the
+ * types below are a local structural mirror of the minimum subset of its
+ * `EnrichedProductProfile` output contract this bridge needs.
+ */
+
+/** Mirrors `EnrichedIdentifiers` from primeopp-product-enrichment. */
+export interface EnrichmentHandoffIdentifiers {
+  upc?: string[];
+  ean?: string[];
+  gtin?: string[];
+  isbn?: string[];
+  sku?: string[];
+  mpn?: string[];
+}
+
+/** Mirrors `EnrichedIdentity` from primeopp-product-enrichment. */
+export interface EnrichmentHandoffIdentity {
+  canonicalTitle?: string;
+  brand?: string;
+  model?: string;
+}
+
+/** Mirrors `EnrichedClassification` from primeopp-product-enrichment. */
+export interface EnrichmentHandoffClassification {
+  category?: string;
+}
+
+/** Mirrors `EnrichedProductProfile.status` from primeopp-product-enrichment. */
+export type EnrichmentHandoffStatus = 'ENRICHED' | 'PARTIAL' | 'AMBIGUOUS' | 'NOT_FOUND' | 'FAILED';
+
+/** Mirrors the fields of `EnrichedProductProfile` this bridge needs. */
+export interface EnrichmentHandoffProfile {
+  enrichmentId: string;
+  intakeId?: string;
+  identifiers: EnrichmentHandoffIdentifiers;
+  identity: EnrichmentHandoffIdentity;
+  classification: EnrichmentHandoffClassification;
+  confidence: { overall: number };
+  status: EnrichmentHandoffStatus;
+}
+
+export interface ResolutionInputFromEnrichmentResult {
+  input: ResolutionInput;
+  warnings: string[];
+  enrichmentId: string;
+  intakeId?: string;
+}
+
+/**
+ * True when the enriched profile's status permits identity resolution.
+ * `NOT_FOUND` and `FAILED` profiles carry no usable signal for matching
+ * against the canonical catalog.
+ */
+export function isResolutionEligible(profile: EnrichmentHandoffProfile): boolean {
+  return profile.status === 'ENRICHED' || profile.status === 'PARTIAL' || profile.status === 'AMBIGUOUS';
+}
+
+/**
+ * Pick the single primary barcode-family identifier value from an
+ * enrichment identifier bucket, in GTIN > UPC > EAN > ISBN priority order
+ * (same order used by primeopp-product-enrichment's own
+ * `examples/downstream-handoff.ts`). Blank/whitespace-only values are
+ * rejected rather than passed through. Only one identifier is selected —
+ * resolution input carries exactly one barcode claim, never several
+ * simultaneous ones for the same profile.
+ */
+function primaryBarcodeValue(identifiers: EnrichmentHandoffIdentifiers): string | undefined {
+  const buckets = [identifiers.gtin, identifiers.upc, identifiers.ean, identifiers.isbn];
+  for (const bucket of buckets) {
+    const value = bucket?.find((v) => v.trim().length > 0);
+    if (value) return value.trim();
+  }
+  return undefined;
+}
+
+/**
+ * Convert an enriched product profile into a `ResolutionInput` for
+ * `ProductIdentityResolver`. This is the sole handoff point between
+ * enrichment output and canonical identity resolution — it does not create
+ * or mutate any canonical catalog record itself.
+ *
+ * Barcode-family identifiers (GTIN/UPC/EAN/ISBN) are converted into a real
+ * `BarcodePayload` via `@primeopp/barcode`'s `detectFormat`/`toBarcodePayload`,
+ * so `checkDigitValid` is a deterministic computation from the digits
+ * themselves, never an invented value. SKU/MPN values have no check-digit
+ * concept and are never coerced into a `BarcodePayload`; when no
+ * barcode-family identifier is present, the best available SKU/MPN value is
+ * carried as free-text (`ResolutionInput.text`) instead, with a warning.
+ *
+ * Throws for `NOT_FOUND` / `FAILED` profiles (see `isResolutionEligible`)
+ * and for profiles with no identifier and no identity signal at all —
+ * both are refusals, not silently-empty resolution attempts.
+ */
+export function buildResolutionInputFromEnrichedProfile(
+  profile: EnrichmentHandoffProfile
+): ResolutionInputFromEnrichmentResult {
+  if (!isResolutionEligible(profile)) {
+    throw new Error(
+      `RESOLUTION_INELIGIBLE: enrichment profile ${profile.enrichmentId} has status ${profile.status}; only ENRICHED, PARTIAL, and AMBIGUOUS profiles are eligible for identity resolution`
+    );
+  }
+
+  const warnings: string[] = [];
+  const input: ResolutionInput = {};
+
+  const barcodeValue = primaryBarcodeValue(profile.identifiers);
+  if (barcodeValue) {
+    input.barcode = toBarcodePayload(barcodeValue, detectFormat(barcodeValue));
+  } else {
+    const fallbackText = profile.identifiers.mpn?.find((v) => v.trim().length > 0)
+      ?? profile.identifiers.sku?.find((v) => v.trim().length > 0);
+    if (fallbackText) {
+      input.text = fallbackText.trim();
+      warnings.push(
+        `profile ${profile.enrichmentId} has no GTIN/UPC/EAN/ISBN identifier; falling back to SKU/MPN text search`
+      );
+    }
+  }
+
+  if (profile.identity.canonicalTitle) input.title = profile.identity.canonicalTitle;
+  if (profile.identity.brand) input.brand = profile.identity.brand;
+  if (profile.identity.model) input.model = profile.identity.model;
+  if (profile.classification.category) input.category = profile.classification.category;
+
+  if (!input.barcode && !input.text && !input.title && !input.brand && !input.model) {
+    throw new Error(
+      `RESOLUTION_NO_SIGNAL: enrichment profile ${profile.enrichmentId} has no identifier, title, brand, or model to resolve against the canonical catalog`
+    );
+  }
+
+  if (profile.status === 'AMBIGUOUS') {
+    warnings.push(
+      `profile ${profile.enrichmentId} was AMBIGUOUS in enrichment; treat resolution candidates with extra caution`
+    );
+  }
+
+  return {
+    input,
+    warnings,
+    enrichmentId: profile.enrichmentId,
+    ...(profile.intakeId ? { intakeId: profile.intakeId } : {}),
+  };
 }
