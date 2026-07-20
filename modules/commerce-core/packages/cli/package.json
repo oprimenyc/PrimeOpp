@@ -18,6 +18,8 @@
   },
   "dependencies": {
     "@primeopp/sdk": "1.0.0",
+    "@primeopp/pipeline": "1.0.0",
+    "@primeopp/canonical-catalog": "1.0.0",
     "@primeopp/contracts": "1.0.0",
     "@primeopp/barcode": "1.0.0",
     "@primeopp/pricing": "1.0.0",

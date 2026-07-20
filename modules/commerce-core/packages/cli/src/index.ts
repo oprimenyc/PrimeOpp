@@ -2,8 +2,9 @@
 // PrimeOpp Commerce Core CLI — Phase 25.
 
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 import { createSdk } from '@primeopp/sdk';
+import { ingestProduct, FileCatalogStorage, FileIntakeStore } from '@primeopp/pipeline';
 import { validateBarcode, toBarcodePayload, createScanEvent } from '@primeopp/barcode';
 import { assessCondition } from '@primeopp/condition-engine';
 import { priceProduct, createPricingObservation } from '@primeopp/pricing';
@@ -53,6 +54,9 @@ Usage: primeopp <command> [args]
 Commands:
   products resolve <file>          Resolve product identity from input JSON.
   products inspect <id>            Inspect a product by ID.
+  catalog ingest <file>            Run raw product input through intake -> enrichment ->
+                                    identity resolution -> canonical catalog creation.
+  catalog list                     List canonical products in the persisted catalog.
   barcode validate <code>          Validate a barcode.
   barcode resolve <code>           Resolve a barcode to a product candidate.
   condition assess <file>          Assess condition from JSON.
@@ -76,6 +80,9 @@ Global flags:
   --json                           Emit JSON output (where applicable).
   --tenant <id>                    Tenant ID (default: 'cli-default').
   --org <id>                       Organization ID.
+  --data-dir <dir>                 Directory for persisted catalog CLI data
+                                    (default: '.primeopp-data' under the current
+                                    working directory). Only used by 'catalog' commands.
 `);
   process.exit(0);
 }
@@ -100,6 +107,7 @@ async function main() {
   const json = getJsonFlag();
   const tenantId = getFlag('tenant') ?? 'cli-default';
   const organizationId = getFlag('org');
+  const dataDir = getFlag('data-dir') ?? resolve('.primeopp-data');
 
   const sdk = createSdk({ tenantId, ...(organizationId ? { organizationId } : {}) });
 
@@ -391,6 +399,67 @@ async function main() {
         break;
       }
       stderr(`products: unknown subcommand ${sub}`);
+      process.exit(2);
+    }
+
+    case 'catalog': {
+      const sub = rest.shift();
+      const catalogStorage = new FileCatalogStorage(join(dataDir, 'catalog.json'));
+
+      if (sub === 'ingest') {
+        const file = rest.shift();
+        if (!file) { stderr('catalog ingest: missing <file>'); process.exit(2); }
+        const actor = getFlag('actor') ?? process.env.USERNAME ?? process.env.USER ?? 'cli-operator';
+        const input = readJson(file);
+        const intakeDedupStore = new FileIntakeStore(join(dataDir, 'intake.json'));
+        const result = await ingestProduct(input as Parameters<typeof ingestProduct>[0], {
+          scope: sdk.scope,
+          actor,
+          catalogStorage,
+          intakeDedupStore,
+        });
+
+        if (json) { jsonOut(result); }
+        else {
+          switch (result.outcome) {
+            case 'CREATED':
+              stdout(`Created canonical product ${result.product.id}: "${result.product.title}"`);
+              if (result.warnings.length > 0) stdout(`Warnings: ${result.warnings.join('; ')}`);
+              break;
+            case 'INTAKE_REJECTED':
+              stdout(`Rejected at intake: ${result.reason}`);
+              break;
+            case 'INTAKE_DUPLICATE':
+              stdout(`Duplicate of intake record ${result.duplicateOf} -- not re-ingested.`);
+              break;
+            case 'NO_ENRICHMENT_DATA':
+              stdout(`No enrichment data available: ${result.reason}`);
+              break;
+            case 'ENRICHMENT_NOT_FOUND':
+              stdout(`Enrichment found no data for this product (status=${result.enrichment.status}).`);
+              break;
+            case 'ALREADY_IN_CATALOG':
+              stdout(`Already in catalog (state=${result.resolution.state}): ${result.reason}`);
+              break;
+            case 'NEEDS_HUMAN_REVIEW':
+              stdout(`Needs human review: ${result.reason}`);
+              break;
+          }
+        }
+        process.exit(result.outcome === 'CREATED' ? 0 : 1);
+      }
+
+      if (sub === 'list') {
+        const products = await catalogStorage.list(sdk.scope.tenantId);
+        if (json) { jsonOut(products); }
+        else {
+          if (products.length === 0) stdout('No canonical products in the catalog yet.');
+          else for (const p of products) stdout(`${p.id}  ${p.title}  (identifiers=${p.identifiers.length}, version=${p.version})`);
+        }
+        break;
+      }
+
+      stderr(`catalog: unknown subcommand ${sub}`);
       process.exit(2);
     }
 

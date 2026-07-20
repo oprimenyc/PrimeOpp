@@ -56,3 +56,6 @@ node_modules/
 *.key
 *.p12
 *.pfx
+
+# PrimeOpp commerce-core CLI persisted data (operator-local, not source)
+**/.primeopp-data/
