@@ -10,7 +10,7 @@ import {
 } from "../lib/fulfillmentQueue.js";
 import { processNotificationJobSoon } from "../lib/notificationQueue.js";
 import { assertOrderTransition, isOrderStatus, ORDER_STATUSES } from "../lib/orderState.js";
-import { checkoutSessionSchema, idParamSchema, orderStatusSchema, validateBody, validateParams } from "../lib/validation.js";
+import { checkoutSessionSchema, idParamSchema, orderLookupSchema, orderStatusSchema, validateBody, validateParams } from "../lib/validation.js";
 
 const router = Router();
 
@@ -418,6 +418,58 @@ router.post("/webhook", async (req, res) => {
   }
   if (queuedNotificationJobId) {
     processNotificationJobSoon(queuedNotificationJobId);
+  }
+});
+
+// Public customer order lookup — verified by order id + the email the order
+// was placed under (mirrors the unauthenticated-by-email pattern already used
+// by GET /loyalty/:email). Returns a customer-safe subset only, never the
+// full admin row (no Stripe identifiers, no internal fulfillment provider
+// details). Order-not-found and email-mismatch return the same 404 so the
+// response can't be used to enumerate valid order ids.
+router.post("/orders/lookup", validateBody(orderLookupSchema), async (req, res) => {
+  const { id, email } = req.body as { id: number; email: string };
+
+  try {
+    const rows = await query<{
+      id: number;
+      status: string;
+      customer_email: string;
+      shipping_address: ShippingAddress | null;
+      items: OrderItem[] | null;
+      total: string | number | null;
+      fulfillment_status: string | null;
+      created_at: string;
+    }>(
+      `SELECT id, status, customer_email, shipping_address, items, total, fulfillment_status, created_at
+       FROM orders
+       WHERE id=$1`,
+      [id],
+    );
+    const order = rows[0];
+
+    if (!order || order.customer_email.trim().toLowerCase() !== email.trim().toLowerCase()) {
+      res.status(404).json({ error: "No order found for that order number and email" });
+      return;
+    }
+
+    res.json({
+      id: order.id,
+      status: order.status,
+      fulfillment_status: order.fulfillment_status,
+      created_at: order.created_at,
+      total: order.total,
+      items: (order.items ?? []).map((item) => ({
+        title: item.title,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+      })),
+      shipping_address: order.shipping_address,
+    });
+  } catch (err) {
+    console.error("POST /orders/lookup error:", err);
+    res.status(500).json({ error: "Failed to look up order" });
   }
 });
 

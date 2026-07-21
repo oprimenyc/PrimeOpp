@@ -15,6 +15,7 @@ import {
   type ProductReview,
 } from "@/lib/api";
 import { addToCart, type CartItem } from "@/lib/cart";
+import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
 import { Seo } from "@/components/Seo";
 import ProductCard from "@/components/ProductCard";
 
@@ -28,6 +29,7 @@ function ProductPage() {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [wishlisted, setWishlisted] = useState(false);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [averageRating, setAverageRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
@@ -54,6 +56,7 @@ function ProductPage() {
           return;
         }
         setProduct(p);
+        setWishlisted(isInWishlist(p.id));
         const recent = getRecentProductIds();
         localStorage.setItem("primeopp_recent_products", JSON.stringify([p.id, ...recent.filter((item) => item !== p.id)].slice(0, 12)));
         // Auto-select if only one size
@@ -148,6 +151,12 @@ function ProductPage() {
     window.dispatchEvent(new Event("cart-updated"));
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
+  }
+
+  function handleToggleWishlist() {
+    if (!product) return;
+    const { added } = toggleWishlist(product.id);
+    setWishlisted(added);
   }
 
   function handleBuyNow() {
@@ -388,6 +397,18 @@ function ProductPage() {
                   BUY NOW — ${displayPrice.toFixed(2)}
                 </button>
               )}
+
+              {/* Wishlist — local to this browser, see /wishlist */}
+              <button
+                onClick={handleToggleWishlist}
+                className={`border text-xs font-black py-3 tracking-[0.3em] uppercase transition-colors ${
+                  wishlisted
+                    ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    : "border-zinc-800 text-zinc-500 hover:border-white hover:text-white"
+                }`}
+              >
+                {wishlisted ? "♥ SAVED TO WISHLIST" : "♡ SAVE TO WISHLIST"}
+              </button>
             </div>
           )}
 

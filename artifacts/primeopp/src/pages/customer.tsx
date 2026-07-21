@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { Seo } from "@/components/Seo";
-import { fetchLoyalty, fetchProducts, type Product } from "@/lib/api";
+import { fetchLoyalty, fetchProducts, lookupOrder, type OrderLookupResult, type Product } from "@/lib/api";
+import { getWishlist, removeFromWishlist } from "@/lib/wishlist";
 
 export function AccountPage() {
   const [email, setEmail] = useState("");
@@ -52,13 +53,109 @@ export function AccountPage() {
 }
 
 export function CustomerOrdersPage() {
-  return <Shell title="Orders" description="Find help for PrimeOpp orders."><p className="text-zinc-400 normal-case">Order lookup is handled by support for now. Include your order number and checkout email when contacting support.</p></Shell>;
+  const [orderId, setOrderId] = useState("");
+  const [email, setEmail] = useState("");
+  const [order, setOrder] = useState<OrderLookupResult | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleLookup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setOrder(null);
+    const id = Number(orderId);
+    if (!Number.isInteger(id) || id <= 0) {
+      setError("Enter a valid order number.");
+      return;
+    }
+    setLoading(true);
+    try {
+      setOrder(await lookupOrder(id, email));
+    } catch {
+      setError("No order found for that order number and email. Double-check both and try again, or contact support.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Shell title="Orders" description="Look up a PrimeOpp order.">
+      <p className="text-zinc-400 normal-case mb-6">Enter your order number and the email used at checkout to view its status.</p>
+      <form onSubmit={(event) => void handleLookup(event)} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 mb-6 max-w-2xl">
+        <input value={orderId} onChange={(event) => setOrderId(event.target.value)} placeholder="Order number" inputMode="numeric" className="bg-zinc-950 border border-zinc-800 px-4 py-3 text-sm text-white normal-case outline-none focus:border-red-600" />
+        <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" className="bg-zinc-950 border border-zinc-800 px-4 py-3 text-sm text-white normal-case outline-none focus:border-red-600" />
+        <button disabled={loading} className="bg-red-600 text-white px-5 text-xs font-black tracking-widest uppercase hover:bg-white hover:text-black transition-colors disabled:opacity-50">{loading ? "Looking up..." : "Find Order"}</button>
+      </form>
+      {error && <p className="text-red-500 text-sm normal-case mb-6">{error}</p>}
+      {order && (
+        <div className="border border-zinc-900 bg-zinc-950 p-5 max-w-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <RewardStat label="Order" value={`#${order.id}`} />
+            <RewardStat label="Status" value={order.status} />
+            <RewardStat label="Fulfillment" value={order.fulfillment_status ?? "Pending"} />
+          </div>
+          <p className="text-zinc-600 text-[10px] tracking-[0.35em] font-black uppercase mb-3">Items</p>
+          <div className="mb-4">
+            {(order.items ?? []).map((item, index) => (
+              <div key={`${item.title}-${index}`} className="flex justify-between border-b border-zinc-900 py-2 last:border-0 text-sm normal-case">
+                <span className="text-zinc-400">{item.title} {item.size ? `· ${item.size}` : ""} {item.color ? `· ${item.color}` : ""} × {item.quantity}</span>
+              </div>
+            ))}
+          </div>
+          {order.shipping_address && (
+            <p className="text-zinc-500 text-xs normal-case">
+              Shipping to {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postal_code}
+            </p>
+          )}
+          {order.total !== null && (
+            <p className="text-white font-black mt-3">Total: ${Number(order.total).toFixed(2)}</p>
+          )}
+        </div>
+      )}
+    </Shell>
+  );
 }
 
 export function WishlistPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  useEffect(() => { fetchProducts().then(setProducts).catch(() => setProducts([])); }, []);
-  return <Shell title="Wishlist" description="Save PrimeOpp products for later."><p className="text-zinc-500 normal-case mb-6">Wishlist support is local to your browser in this release.</p><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{products.slice(0, 3).map((p) => <a key={p.id} href={`/product/${p.id}`} className="border border-zinc-800 p-5 hover:border-red-600"><span className="text-white font-bold">{p.title}</span></a>)}</div></Shell>;
+  const [ids, setIds] = useState<number[]>([]);
+
+  function refresh() {
+    const wishlistIds = getWishlist();
+    setIds(wishlistIds);
+    fetchProducts()
+      .then((all) => setProducts(wishlistIds.map((id) => all.find((product) => product.id === id)).filter(Boolean) as Product[]))
+      .catch(() => setProducts([]));
+  }
+
+  useEffect(() => {
+    refresh();
+    window.addEventListener("wishlist-updated", refresh);
+    return () => window.removeEventListener("wishlist-updated", refresh);
+  }, []);
+
+  return (
+    <Shell title="Wishlist" description="Save PrimeOpp products for later.">
+      <p className="text-zinc-500 normal-case mb-6">Wishlist items are saved locally in this browser only — they won't follow you to another device.</p>
+      {ids.length === 0 ? (
+        <p className="text-zinc-400 normal-case">Nothing saved yet. Tap "Save to Wishlist" on any product page.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {products.map((p) => (
+            <div key={p.id} className="border border-zinc-800 p-5 hover:border-red-600 flex flex-col gap-3">
+              <a href={`/product/${p.id}`} className="text-white font-bold">{p.title}</a>
+              <button
+                onClick={() => removeFromWishlist(p.id)}
+                className="text-[10px] tracking-widest uppercase text-zinc-500 hover:text-red-600 self-start"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Shell>
+  );
 }
 
 export function RecentlyViewedPage() {

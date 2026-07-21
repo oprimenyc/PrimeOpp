@@ -5,6 +5,7 @@ import productsRouter from "./products.js";
 import ordersRouter from "./orders.js";
 import adminRouter from "./admin.js";
 import revenueRouter from "./revenue.js";
+import contactRouter from "./contact.js";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(productsRouter);
 router.use(ordersRouter);
 router.use(adminRouter);
 router.use(revenueRouter);
+router.use(contactRouter);
 
 export default router;

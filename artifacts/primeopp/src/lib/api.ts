@@ -419,6 +419,59 @@ export async function fetchLoyalty(email: string): Promise<{
   }>;
 }
 
+// ─── Order lookup (customer, public) ─────────────────────────────────────────
+
+export interface OrderLookupResult {
+  id: number;
+  status: string;
+  fulfillment_status: string | null;
+  created_at: string;
+  total: number | string | null;
+  items: Array<{ title: string; quantity: number; size: string; color: string }>;
+  shipping_address: {
+    name: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  } | null;
+}
+
+export async function lookupOrder(id: number, email: string): Promise<OrderLookupResult> {
+  const res = await fetch("/api/orders/lookup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, email }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(err?.error ?? "Order not found");
+  }
+  return res.json() as Promise<OrderLookupResult>;
+}
+
+// ─── Contact ──────────────────────────────────────────────────────────────────
+
+export async function submitContactMessage(data: {
+  name: string;
+  email: string;
+  order_id?: number | null;
+  subject?: string;
+  message: string;
+}): Promise<void> {
+  const res = await fetch("/api/contact", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(err?.error ?? "Message could not be submitted");
+  }
+}
+
 // ─── Orders (admin) ───────────────────────────────────────────────────────────
 
 export async function fetchOrders(): Promise<Order[]> {

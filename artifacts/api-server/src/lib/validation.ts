@@ -109,6 +109,19 @@ export const discountQuoteSchema = z.object({
   })).min(1).max(50),
 });
 
+export const orderLookupSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  email: z.string().email(),
+});
+
+export const contactMessageSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  email: z.string().email(),
+  order_id: z.coerce.number().int().positive().nullable().optional(),
+  subject: z.string().trim().max(160).nullable().optional(),
+  message: z.string().trim().min(10).max(3000),
+});
+
 export function validateBody<T extends z.ZodTypeAny>(schema: T) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const parsed = schema.safeParse(req.body);
