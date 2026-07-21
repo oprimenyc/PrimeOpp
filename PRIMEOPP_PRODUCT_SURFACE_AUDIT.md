@@ -1,0 +1,26 @@
+# PrimeOpp Product Surface Audit
+
+Verified by reading code (routes + pages), not by trusting docs. Frontend: `artifacts/primeopp/src/`, wired in `App.tsx`. Backend: `artifacts/api-server/src/routes/`, mounted in `routes/index.ts`.
+
+Hard prerequisite for everything below: `artifacts/api-server` will not boot without `DATABASE_URL`, `SESSION_SECRET` (32+ chars), `ADMIN_EMAIL`, `ADMIN_PASSWORD` (12+ chars), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` all set — enforced by a Zod schema in `src/lib/env.ts` (hard boot failure, not a soft warning). The DB schema exists only as unrun raw SQL (`lib/db/migrations/0001_base_schema.sql` … `0006_revenue_engine.sql`); no migration runner exists in the repo.
+
+| Surface | Files | What it actually does | Classification |
+|---|---|---|---|
+| Catalog / product browsing | `pages/catalog.tsx`, `pages/home.tsx`, `components/ProductCard.tsx`; `GET /api/products` | Fetches all products from Postgres with a review-aggregate join; filtering (category/type/text) is entirely client-side, no server query params used | **REAL** (working, but not server-side search/pagination) |
+| Product detail page | `pages/product.tsx` (528 lines); `GET/POST /api/products/:id`, `/reviews`, `/recommendations` | Size/color/qty picker, add-to-cart, buy-now, reviews (list/submit/helpful-vote), 4 recommendation carousels, JSON-LD, writes to `localStorage["primeopp_recent_products"]` | **REAL** |
+| Cart | `lib/cart.ts` (localStorage), `pages/cart.tsx` | Stateless/guest cart in `localStorage`; discount quote via `POST /api/discounts/quote`; abandoned-cart tracking (`POST /api/abandoned-cart`, debounced 700ms) | **REAL** (working for a guest-cart model, no server-side cart persistence) |
+| Checkout | `POST /api/checkout/session`, `GET /api/checkout/session/:id` | Server re-prices every line item from DB (ignores client price), validates discount code, creates `pending` order, then a real `stripe.checkout.sessions.create()` call; cleans up on failure | **REAL** — not a placeholder. Returns 503 if `STRIPE_SECRET_KEY` unset. |
+| Order confirmation | `POST /api/webhook`, `pages/order-success.tsx` | Verifies Stripe signature (hard-fails in production if `STRIPE_WEBHOOK_SECRET` unset); transactionally marks order paid; queues fulfillment + notification jobs idempotently | **REAL** |
+| Customer account / auth | `pages/customer.tsx` → `AccountPage`; `GET /api/loyalty/:email` | No password login for customers by design — email-only loyalty lookup | **REAL, intentionally minimal** — no actual customer authentication exists |
+| Order lookup (customer) | `pages/customer.tsx` → `CustomerOrdersPage` | Static text: "Order lookup is handled by support for now." No API call, no form | **STUB** |
+| Wishlist | `pages/customer.tsx` → `WishlistPage` | UI copy claims "local to your browser," but there is no `localStorage` write for wishlist items anywhere — it just shows the first 3 fetched products | **STUB** (copy over-promises; not wired to any real state) |
+| Recently viewed | `pages/customer.tsx` → `RecentlyViewedPage`; write side in `product.tsx` | Reads/writes `localStorage["primeopp_recent_products"]` on every product-page visit | **REAL** (localStorage-only, no account sync) |
+| Loyalty lookup | `AccountPage`; `GET /api/loyalty/:email` | Points balance, VIP level, referral code, points history by email — no auth beyond knowing the email | **REAL**, but unauthenticated by email (enumeration/privacy concern — flagged, not fixed this session, see blockers doc) |
+| Support / contact | `pages/static-pages.tsx` → `ContactPage` | Static "email support@primeopp.com" instruction, no form, no ticketing | **STUB** |
+| Email capture | `cart.tsx` cart-recovery field | Real, wired to `POST /api/abandoned-cart`; no separate newsletter signup exists | **REAL**, narrow scope (cart recovery only) |
+| Admin / operator surface | `pages/admin*.tsx`; `routes/admin.ts`, `routes/auth.ts`, parts of `routes/revenue.ts` | Full product CRUD w/ base64 image upload (no object storage), color-variant editor, login sets httpOnly `__Host-` session cookie + rotating CSRF token, permission-gated dashboard/audit-log | **REAL** — auth scheme is cookie+CSRF, not the JWT/localStorage scheme `replit.md` described before this session's fix |
+| API routes backing all of the above | `routes/{products,orders,auth,admin,revenue,health}.ts` | Products CRUD, checkout/webhook, orders+fulfillment retry, auth, admin dashboard/audit-log, reviews CRUD+moderation, recommendations, abandoned-cart, discounts, loyalty, revenue dashboard | **REAL**, server-authoritative pricing throughout |
+
+## Net read
+
+The storefront + API are substantially more complete than a skim of `README.md`/old `replit.md` would suggest — checkout is a genuine Stripe integration with idempotent webhook handling, not a mock. The gaps are concentrated in exactly three customer-facing spots (order lookup, wishlist, contact/support), all of which are honest-ish static placeholders rather than broken code — they just don't do what their own UI copy implies. None of this was changed this session (would require product decisions — e.g. build a real wishlist store — out of scope for a repo-local readiness cleanup pass). They're carried into [PRIMEOPP_LAUNCH_BLOCKERS.md](PRIMEOPP_LAUNCH_BLOCKERS.md) as launch blockers.

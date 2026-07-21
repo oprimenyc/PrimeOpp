@@ -20,7 +20,7 @@
     "test": "node --test \"packages/*/tests/**/*.test.ts\"",
     "test:unit": "node --test \"packages/*/tests/**/*.test.ts\"",
     "verify": "node scripts/verify.ts",
-    "verify:proofs": "node scripts/run-proofs.ts",
+    "verify:proofs": "node scripts/verify.ts",
     "demo": "node packages/cli/src/index.ts demo",
     "doctor": "node packages/cli/src/index.ts doctor",
     "package": "node scripts/package.ts",

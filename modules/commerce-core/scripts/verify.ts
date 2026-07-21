@@ -116,8 +116,9 @@ async function main() {
     const testFiles = getAllTestFiles();
     const r = spawnSync('node', ['--test', ...testFiles], { cwd: ROOT, shell: false, encoding: 'utf-8' });
     const out = r.stdout ?? '';
-    const passMatch = out.match(/ℹ pass\s+(\d+)/);
-    const failMatch = out.match(/ℹ fail\s+(\d+)/);
+    // node --test uses "ℹ pass N" (spec reporter, TTY stdout) or "# pass N" (tap reporter, piped stdout) depending on interactivity.
+    const passMatch = out.match(/[ℹ#]\s*pass\s+(\d+)/);
+    const failMatch = out.match(/[ℹ#]\s*fail\s+(\d+)/);
     const pass = passMatch ? parseInt(passMatch[1], 10) : 0;
     const fail = failMatch ? parseInt(failMatch[1], 10) : 0;
     testResults.pass = pass;

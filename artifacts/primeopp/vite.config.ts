@@ -4,29 +4,28 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+// PORT is only needed to serve (dev/preview) — `vite build` doesn't bind a
+// port, so requiring it there blocks local `pnpm build` runs for no reason.
+function resolvePort(command: "build" | "serve"): number {
+  if (command !== "serve") return 0;
+  const rawPort = process.env.PORT;
+  if (!rawPort) {
+    throw new Error(
+      "PORT environment variable is required but was not provided.",
+    );
+  }
+  const port = Number(rawPort);
+  if (Number.isNaN(port) || port <= 0) {
+    throw new Error(`Invalid PORT value: "${rawPort}"`);
+  }
+  return port;
 }
 
-const port = Number(rawPort);
+// BASE_PATH affects the built asset base URL; default to root-relative so a
+// plain `vite build` (e.g. for a non-Replit static host) works without it.
+const basePath = process.env.BASE_PATH ?? "/";
 
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
-
-export default defineConfig({
+export default defineConfig(async ({ command }) => ({
   base: basePath,
   plugins: [
     react(),
@@ -59,7 +58,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port,
+    port: resolvePort(command),
     host: "0.0.0.0",
     allowedHosts: true,
     fs: {
@@ -68,8 +67,8 @@ export default defineConfig({
     },
   },
   preview: {
-    port,
+    port: resolvePort(command),
     host: "0.0.0.0",
     allowedHosts: true,
   },
-});
+}));

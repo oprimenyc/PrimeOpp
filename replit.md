@@ -69,7 +69,7 @@ PrimeOpp e-commerce + affiliate marketing storefront. Edgy black/red streetwear 
   - `src/components/ProductCard.tsx` — card with color swatches; POD→detail, Affiliate→new tab
   - `src/components/Navbar.tsx` — top navbar
   - `src/index.css` — global styles (black/red theme)
-- **Auth**: JWT stored in localStorage; admin credentials set via `ADMIN_USERNAME` / `ADMIN_PASSWORD` env vars
+- **Auth**: httpOnly session cookie + rotating CSRF token (see `artifacts/api-server/src/routes/auth.ts`); admin credentials set via `ADMIN_EMAIL` / `ADMIN_PASSWORD` env vars (not JWT/localStorage — this doc previously described an outdated scheme)
 - **Product types**: `pod` (print-on-demand) and `affiliate`
 - **Color variants**: per-product color options with individual pricing
 
@@ -92,10 +92,10 @@ Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client insta
 - `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
 - `src/schema/index.ts` — barrel re-export of all models
 - `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
+- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL` to be set manually; not auto-provided outside the Replit dev workspace)
 - Exports: `.` (pool, db, schema), `./schema` (schema only)
 
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+In development, we use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`. Replit is a dev/provenance workspace only — it is not an approved production or staging deployment target. There is currently no production migration runner in this repo; see `PRIMEOPP_LAUNCH_BLOCKERS.md`.
 
 ### `lib/api-spec` (`@workspace/api-spec`)
 
