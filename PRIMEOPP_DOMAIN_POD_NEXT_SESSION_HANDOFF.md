@@ -57,7 +57,7 @@ next step.
 - Registering `https://<domain>/api/webhook` in the Stripe Dashboard
 - Verifying the sending domain in Resend (SPF/DKIM)
 - Setting `ALLOWED_ORIGINS` to the real production origin
-- Attaching a custom domain in Replit (or wherever the app is ultimately deployed)
+- Attaching a custom domain at the approved production host once one is selected (deployment target is currently UNDECIDED — see `PRIMEOPP_REPLIT_CLASSIFICATION_CURRENT_TRUTH.md`; Replit is PrimeOpp's current dev-stack host only, not an approved deploy target)
 - Any find-and-replace of the `primeopp.com` placeholder strings, if the final domain
   differs
 

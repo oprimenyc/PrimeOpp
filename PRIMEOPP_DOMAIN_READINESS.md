@@ -40,6 +40,12 @@ governing these strings).
   **Replit's own custom-domain feature**, or the app would need to be deployed to a
   different provider first — that is a provider-console action, not something this repo
   controls.
+  **Classification (see `PRIMEOPP_REPLIT_CLASSIFICATION_CURRENT_TRUTH.md`): the above is a
+  factual description of the current dev-stack host only, not a deployment
+  recommendation. PrimeOpp's approved production/staging deployment target is
+  UNDECIDED — Replit must not be treated as the launch target, and a real host (e.g.
+  Railway, per this ecosystem's own `ecosystem-hosting-target-map.md`) needs an explicit
+  founder decision before a domain is attached anywhere.**
 - **Stripe webhook endpoint:** `README.md`'s Go-Live checklist calls for registering
   `https://your-domain/api/webhook` in the Stripe Dashboard once a domain exists — this
   is a manual Stripe-console step, not code.
