@@ -11,7 +11,7 @@ STARTING HEAD:
 353cd2be4c6945b411bfdb1bd24d0b41422a7837
 
 ENDING HEAD:
-(see COMMIT below — recorded after this doc's own commit)
+bfb75856f3166072da8fcf09b06eb565cea4de71
 
 CLASSIFICATION:
 DEPLOYABLE_FULLSTACK_SERVICE
@@ -106,7 +106,7 @@ FAKE PAYMENT SUCCESS INTRODUCED:
 NO
 
 COMMIT:
-(recorded after commit — see git log)
+bfb75856f3166072da8fcf09b06eb565cea4de71
 
 PUSHED:
 YES
