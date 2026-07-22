@@ -121,7 +121,7 @@ app.use("/api", router);
 // Serve React frontend
 app.use(express.static(frontendPath));
 
-app.get("*", (_req: Request, res: Response) => {
+app.get("/{*splat}", (_req: Request, res: Response) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
