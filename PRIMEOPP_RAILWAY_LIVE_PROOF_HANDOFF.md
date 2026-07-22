@@ -38,9 +38,9 @@ DESTRUCTIVE MIGRATIONS: NO
 
 FAKE WEB WRAPPER CREATED: NO
 
-COMMIT: PENDING
+COMMIT: 77b7227
 
-PUSHED: PENDING
+PUSHED: YES
 
 ## What Passed
 
@@ -71,4 +71,3 @@ Deployment was parked. Creating a Railway project/service without the required v
 ## Next Single Action
 
 Create/link Railway project `primeopp`, provision or attach Postgres, add the required Railway variable names with real values, run the non-destructive migrations against the intended Railway database, then deploy with `railway up`.
-
