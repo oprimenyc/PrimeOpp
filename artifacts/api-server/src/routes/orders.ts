@@ -288,7 +288,7 @@ router.get("/checkout/session/:id", async (req, res) => {
 router.post("/webhook", async (req, res) => {
   const stripe = getStripe();
   if (!stripe) {
-    res.status(200).send("ok");
+    res.status(503).json({ error: "Stripe not configured - STRIPE_SECRET_KEY missing" });
     return;
   }
 

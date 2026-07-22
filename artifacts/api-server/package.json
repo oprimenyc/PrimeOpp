@@ -7,7 +7,8 @@
   "dev": "NODE_ENV=development tsx ./src/index.ts",
   "build": "tsx ./build.ts",
   "typecheck": "tsc -p tsconfig.json --noEmit",
-  "start": "node ./dist/index.cjs"
+  "start": "node ./dist/index.cjs",
+  "test": "vitest run --reporter=default"
 },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
@@ -32,6 +33,7 @@
     "@types/node": "catalog:",
     "@types/pg": "^8.18.0",
     "esbuild": "^0.27.3",
-    "tsx": "catalog:"
+    "tsx": "catalog:",
+    "vitest": "^2.1.0"
   }
 }

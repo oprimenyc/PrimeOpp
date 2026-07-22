@@ -4,7 +4,14 @@ import { startNotificationRetryWorker } from "./lib/notificationQueue.js";
 import { validateEnv } from "./lib/env.js";
 import { seedInitialAdminUser } from "./lib/auth.js";
 
-validateEnv();
+const env = validateEnv();
+
+if (!env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET) {
+  console.warn(
+    "[Boot] Stripe not configured (STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET missing) — " +
+    "payment routes will fail closed with 503. No paid access will be granted.",
+  );
+}
 
 const rawPort = process.env["PORT"];
 
