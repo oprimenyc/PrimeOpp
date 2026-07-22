@@ -204,6 +204,35 @@ export interface ListingPackageRequest {
   createExports: boolean;
 }
 
+export interface ProductIntakeRequest {
+  query: string;
+  source: "BARCODE" | "MANUAL_IDENTIFIER" | "SEARCH";
+}
+
+export interface ProductIntakeResponse {
+  normalizedIdentifier: string | null;
+  identifierType: "UPC_A" | "EAN_13" | "GTIN" | "ISBN" | "SKU" | "STYLE_CODE" | "PRODUCT_NAME" | "UNKNOWN";
+  valid: boolean;
+  classification: {
+    type: string;
+    confidence: "HIGH" | "MEDIUM" | "LOW" | "AMBIGUOUS";
+    reason: string;
+  };
+  enrichment: null;
+  enrichmentStatus: "AVAILABLE" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
+  productCandidate: {
+    title?: string;
+    brand?: string;
+    description?: string;
+    imageUrl?: string;
+    category?: string;
+    identifiers: Record<string, string>;
+  };
+  canCreateListingPackage: boolean;
+  providerCalls: false;
+  publishEnabled: false;
+}
+
 export interface ChannelListingDraft {
   id: string | number;
   canonical_listing_id: string | number;
@@ -243,6 +272,47 @@ export interface AccountConnectionShell {
   publish_authorized: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface ChannelDefinition {
+  key: string;
+  label: string;
+  category: string;
+  draftsAvailable: true;
+  exportsAvailable: true;
+  oauthEnabled: false;
+  publishEnabled: false;
+  safetyMode: "seller_owned_account";
+}
+
+export interface ChannelConnection {
+  id: string | number;
+  user_id: string | number | null;
+  channel: string;
+  display_name: string | null;
+  connection_status: "NOT_CONNECTED" | "AUTH_REQUIRED" | "CONNECTED_MONITORING_ONLY" | "CONNECTED_DRAFTS_ONLY" | "PUBLISH_DISABLED" | "ERROR";
+  scopes_requested: string[];
+  scopes_granted: string[];
+  token_storage_status: "NOT_STORED" | "ENCRYPTED" | "EXTERNAL_SECRET_STORE" | "NOT_IMPLEMENTED";
+  monitoring_only: boolean;
+  publish_authorized: boolean;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChannelConnectionCreateResponse {
+  connectionId: string | number;
+  channel: string;
+  connectionStatus: "AUTH_REQUIRED";
+  monitoringOnly: true;
+  publishAuthorized: false;
+  oauthEnabled: false;
+  reason: string;
+  tokenStorageStatus: "NOT_IMPLEMENTED";
+  providerCalls: false;
+  publishEnabled: false;
+  connection: ChannelConnection;
 }
 
 import type { CartItem } from "@/lib/cart";
@@ -578,10 +648,53 @@ export async function createListingPackage(data: ListingPackageRequest): Promise
   return res.json() as Promise<ListingPackageResponse>;
 }
 
+export async function classifyProductIntake(data: ProductIntakeRequest): Promise<ProductIntakeResponse> {
+  const res = await fetch("/api/products/intake", {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | ProductIntakeResponse | null;
+    if (err && "classification" in err) return err;
+    throw new Error(err?.error ?? "Product intake could not classify that value.");
+  }
+  return res.json() as Promise<ProductIntakeResponse>;
+}
+
 export async function fetchAccountConnectionShells(): Promise<AccountConnectionShell[]> {
   const res = await fetch("/api/listings/account-connections", { headers: adminHeaders(), credentials: "same-origin" });
   if (!res.ok) throw new Error("Failed to load account connection shells");
   return res.json() as Promise<AccountConnectionShell[]>;
+}
+
+export async function fetchChannels(): Promise<ChannelDefinition[]> {
+  const res = await fetch("/api/channels", { credentials: "same-origin" });
+  if (!res.ok) throw new Error("Failed to load channels");
+  const data = await res.json() as { channels: ChannelDefinition[] };
+  return data.channels;
+}
+
+export async function fetchChannelConnections(): Promise<ChannelConnection[]> {
+  const res = await fetch("/api/channel-connections", { headers: adminHeaders(), credentials: "same-origin" });
+  if (!res.ok) throw new Error("Failed to load channel connections");
+  const data = await res.json() as { connections: ChannelConnection[] };
+  return data.connections;
+}
+
+export async function createChannelConnection(channel: string): Promise<ChannelConnectionCreateResponse> {
+  const res = await fetch("/api/channel-connections", {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify({ channel }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(err?.error ?? "Could not create channel connection shell.");
+  }
+  return res.json() as Promise<ChannelConnectionCreateResponse>;
 }
 
 export async function fetchRevenueDashboard(): Promise<RevenueDashboard> {

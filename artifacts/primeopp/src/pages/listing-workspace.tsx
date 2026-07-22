@@ -1,25 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
-import { Ban, Camera, Copy, Download, Link, Package, Plus, Search, X } from "lucide-react";
+import { Ban, Camera, Copy, Download, Link, Loader2, Package, Plus, Search, ShieldCheck, X } from "lucide-react";
 import { useLocation } from "wouter";
 import {
+  classifyProductIntake,
+  createChannelConnection,
   createListingPackage,
-  fetchAccountConnectionShells,
+  fetchChannelConnections,
+  fetchChannels,
   verifyToken,
-  type AccountConnectionShell,
+  type ChannelConnection,
+  type ChannelDefinition,
   type ChannelListingDraft,
   type ListingExportPackage,
   type ListingPackageResponse,
+  type ProductIntakeResponse,
 } from "@/lib/api";
 
-type IntakeSource = "SCAN" | "SEARCH" | "MANUAL_FALLBACK";
+type IntakeSource = "BARCODE" | "SEARCH" | "MANUAL_IDENTIFIER";
+type ListingSource = "SCAN" | "SEARCH" | "MANUAL_FALLBACK";
 
-const suggestedChannels = [
-  "general-resale",
-  "craft-market",
-  "social-commerce",
-  "local-pickup",
-  "collectibles",
-  "apparel-resale",
+const fallbackChannels: ChannelDefinition[] = [
+  { key: "general-resale", label: "General resale", category: "resale", draftsAvailable: true, exportsAvailable: true, oauthEnabled: false, publishEnabled: false, safetyMode: "seller_owned_account" },
+  { key: "craft-market", label: "Craft market", category: "craft", draftsAvailable: true, exportsAvailable: true, oauthEnabled: false, publishEnabled: false, safetyMode: "seller_owned_account" },
+  { key: "social-commerce", label: "Social commerce", category: "social", draftsAvailable: true, exportsAvailable: true, oauthEnabled: false, publishEnabled: false, safetyMode: "seller_owned_account" },
+  { key: "local-pickup", label: "Local pickup", category: "local", draftsAvailable: true, exportsAvailable: true, oauthEnabled: false, publishEnabled: false, safetyMode: "seller_owned_account" },
 ];
 
 const emptyForm = {
@@ -42,43 +46,63 @@ function money(value: string): number | null {
 }
 
 function statusClass(status: string): string {
-  if (status === "READY" || status === "EXPORTED") return "border-emerald-700 text-emerald-300";
-  if (status === "FAILED") return "border-red-700 text-red-300";
-  if (status === "DISABLED") return "border-zinc-700 text-zinc-400";
+  if (status.includes("CONNECTED") || status === "READY" || status === "EXPORTED") return "border-emerald-700 text-emerald-300";
+  if (status === "FAILED" || status === "ERROR") return "border-red-700 text-red-300";
+  if (status === "NOT_CONNECTED" || status === "DISABLED") return "border-zinc-700 text-zinc-400";
   return "border-amber-700 text-amber-300";
+}
+
+function listingSourceFor(source: IntakeSource): ListingSource {
+  if (source === "BARCODE") return "SCAN";
+  if (source === "SEARCH") return "SEARCH";
+  return "MANUAL_FALLBACK";
 }
 
 function ListingWorkspacePage() {
   const [, setLocation] = useLocation();
-  const [source, setSource] = useState<IntakeSource>("SCAN");
+  const [source, setSource] = useState<IntakeSource>("BARCODE");
+  const [query, setQuery] = useState("");
   const [form, setForm] = useState(emptyForm);
+  const [channels, setChannels] = useState<ChannelDefinition[]>(fallbackChannels);
   const [channelQuery, setChannelQuery] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>(["general-resale"]);
-  const [connections, setConnections] = useState<AccountConnectionShell[]>([]);
+  const [connections, setConnections] = useState<ChannelConnection[]>([]);
+  const [intakeResult, setIntakeResult] = useState<ProductIntakeResponse | null>(null);
   const [result, setResult] = useState<ListingPackageResponse | null>(null);
   const [message, setMessage] = useState("");
+  const [loadingIntake, setLoadingIntake] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [connecting, setConnecting] = useState<string | null>(null);
 
   useEffect(() => {
-    async function checkAuth() {
+    async function load() {
       const valid = await verifyToken();
       if (!valid) {
         setLocation("/admin/login");
         return;
       }
       try {
-        setConnections(await fetchAccountConnectionShells());
+        const [channelList, connectionList] = await Promise.all([
+          fetchChannels(),
+          fetchChannelConnections().catch(() => []),
+        ]);
+        setChannels(channelList.length ? channelList : fallbackChannels);
+        setConnections(connectionList);
       } catch {
+        setChannels(fallbackChannels);
         setConnections([]);
       }
     }
-    void checkAuth();
+    void load();
   }, [setLocation]);
 
   const filteredChannels = useMemo(() => {
-    const query = channelQuery.trim().toLowerCase();
-    return suggestedChannels.filter((channel) => channel.includes(query) && !selectedChannels.includes(channel));
-  }, [channelQuery, selectedChannels]);
+    const value = channelQuery.trim().toLowerCase();
+    return channels.filter((channel) => {
+      const matches = !value || channel.key.includes(value) || channel.label.toLowerCase().includes(value);
+      return matches && !selectedChannels.includes(channel.key);
+    });
+  }, [channelQuery, channels, selectedChannels]);
 
   const marginPreview = useMemo(() => {
     const cost = money(form.costBasis);
@@ -89,7 +113,39 @@ function ListingWorkspacePage() {
 
   function flash(text: string) {
     setMessage(text);
-    window.setTimeout(() => setMessage(""), 4000);
+    window.setTimeout(() => setMessage(""), 4500);
+  }
+
+  function applyCandidate(result: ProductIntakeResponse) {
+    const candidate = result.productCandidate;
+    setForm((current) => ({
+      ...current,
+      identifier: result.normalizedIdentifier ?? current.identifier,
+      title: candidate.title ?? current.title,
+      description: candidate.description ?? current.description,
+      category: candidate.category ?? current.category,
+      imageUrl: candidate.imageUrl ?? current.imageUrl,
+    }));
+  }
+
+  async function handleIntake(event: React.FormEvent) {
+    event.preventDefault();
+    if (!query.trim()) {
+      flash("Enter a UPC, EAN, GTIN, SKU, style code, or product-name search.");
+      return;
+    }
+    setLoadingIntake(true);
+    setResult(null);
+    try {
+      const response = await classifyProductIntake({ query: query.trim(), source });
+      setIntakeResult(response);
+      applyCandidate(response);
+      flash(response.valid ? "Identifier classified. Complete missing listing fields manually." : "Identifier needs review before package creation.");
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : "Product intake failed.");
+    } finally {
+      setLoadingIntake(false);
+    }
   }
 
   function addChannel(channel: string) {
@@ -101,6 +157,19 @@ function ListingWorkspacePage() {
 
   function removeChannel(channel: string) {
     setSelectedChannels((current) => current.filter((item) => item !== channel));
+  }
+
+  async function connectChannel(channel: string) {
+    setConnecting(channel);
+    try {
+      const response = await createChannelConnection(channel);
+      setConnections((current) => [response.connection, ...current]);
+      flash(response.reason);
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : "Connection shell could not be created.");
+    } finally {
+      setConnecting(null);
+    }
   }
 
   async function copyText(value: string) {
@@ -118,22 +187,24 @@ function ListingWorkspacePage() {
     URL.revokeObjectURL(url);
   }
 
-  async function handleSubmit(event: React.FormEvent) {
+  async function handlePackageSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!form.identifier.trim()) {
-      flash("Identifier is required.");
+    const identifier = form.identifier.trim() || intakeResult?.normalizedIdentifier || query.trim();
+    if (!identifier) {
+      flash("Run product intake or enter a manual identifier first.");
       return;
     }
     if (selectedChannels.length === 0) {
-      flash("Select at least one draft channel.");
+      flash("Select at least one draft/export channel.");
       return;
     }
 
     setSaving(true);
     try {
       const response = await createListingPackage({
-        source,
-        identifier: form.identifier.trim(),
+        source: listingSourceFor(source),
+        identifier,
+        identifierType: intakeResult?.identifierType ?? null,
         product: {
           title: form.title.trim() || null,
           description: form.description.trim() || null,
@@ -161,7 +232,7 @@ function ListingWorkspacePage() {
     <div className="min-h-screen bg-black text-white font-sans">
       <div className="sticky top-0 z-10 flex items-center justify-between border-b-4 border-red-600 bg-black px-6 py-5">
         <div>
-          <h1 className="text-2xl font-black tracking-widest uppercase">PRIMEOPP</h1>
+          <h1 className="text-2xl font-black uppercase tracking-widest">PRIMEOPP</h1>
           <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.4em] text-red-600">Listing Workspace</p>
         </div>
         <div className="flex gap-3">
@@ -179,11 +250,11 @@ function ListingWorkspacePage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="flex items-center gap-2 text-xl font-black uppercase tracking-widest">
-                <Package className="h-5 w-5 text-red-600" />
-                Listing package - not published
+                <ShieldCheck className="h-5 w-5 text-red-600" />
+                Safety Boundary
               </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-400">
-                PrimeOpp creates local listing packages, draft payloads, and exports. Seller publishes through their own marketplace account. Direct publish requires connected account and explicit approval.
+              <p className="mt-2 max-w-4xl text-sm leading-relaxed text-zinc-400">
+                PrimeOpp prepares listing packages and channel drafts. You publish through your own marketplace accounts. PrimeOpp does not handle buyer payments, payouts, escrow, fulfillment, or disputes.
               </p>
             </div>
             <div className="flex items-center gap-2 border border-zinc-700 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-300">
@@ -193,15 +264,15 @@ function ListingWorkspacePage() {
           </div>
         </section>
 
-        <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
           <section className="space-y-8">
-            <div>
-              <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Intake</h3>
+            <form onSubmit={handleIntake}>
+              <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Product Intake</h3>
               <div className="mb-5 grid gap-3 sm:grid-cols-3">
                 {[
-                  { key: "SCAN" as const, label: "Camera Scan", icon: Camera },
+                  { key: "BARCODE" as const, label: "Scan barcode", icon: Camera },
                   { key: "SEARCH" as const, label: "Search", icon: Search },
-                  { key: "MANUAL_FALLBACK" as const, label: "Manual Fallback", icon: Plus },
+                  { key: "MANUAL_IDENTIFIER" as const, label: "Manual identifier", icon: Plus },
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
@@ -218,55 +289,74 @@ function ListingWorkspacePage() {
                 })}
               </div>
 
-              {source === "SCAN" && (
-                <div className="mb-4 border border-dashed border-zinc-700 bg-zinc-950 p-4">
-                  <label className="flex cursor-pointer items-center justify-center gap-3 text-sm font-bold uppercase tracking-widest text-zinc-300">
+              {source === "BARCODE" && (
+                <div className="mb-4 border border-dashed border-zinc-700 bg-zinc-950 p-4 text-sm font-bold uppercase tracking-widest text-zinc-400">
+                  <div className="flex items-center gap-3">
                     <Camera className="h-5 w-5 text-red-600" />
-                    Capture product image
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={() => flash("Camera capture received. Identifier decoding is not enabled in this build; use search or manual fallback to finish the package.")}
-                    />
-                  </label>
+                    Camera scanner not connected yet
+                  </div>
                 </div>
               )}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identifier *</label>
-                  <input value={form.identifier} onChange={(event) => setForm({ ...form, identifier: event.target.value })} className="w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="scan, search result, or fallback identifier" />
-                </div>
-                <div>
-                  <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Image URL</label>
-                  <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} className="w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="https://..." />
-                </div>
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">
+                UPC / EAN / GTIN / SKU / style code / product name
+              </label>
+              <div className="flex gap-2">
+                <input value={query} onChange={(event) => setQuery(event.target.value)} className="min-w-0 flex-1 border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Enter identifier or product search text" />
+                <button type="submit" disabled={loadingIntake} className="flex min-w-36 items-center justify-center gap-2 bg-red-600 px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors hover:bg-white hover:text-black disabled:opacity-50">
+                  {loadingIntake ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Identify
+                </button>
               </div>
-            </div>
+            </form>
 
-            <div>
-              <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Canonical Package</h3>
+            <section>
+              <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Identification Result</h3>
+              <div className="grid gap-3 border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300">
+                {intakeResult ? (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <p><span className="text-zinc-500">Normalized:</span> {intakeResult.normalizedIdentifier ?? "NONE"}</p>
+                      <p><span className="text-zinc-500">Identifier type:</span> {intakeResult.identifierType}</p>
+                      <p><span className="text-zinc-500">Valid:</span> {intakeResult.valid ? "TRUE" : "FALSE"}</p>
+                      <p><span className="text-zinc-500">Confidence:</span> {intakeResult.classification.confidence}</p>
+                    </div>
+                    <p><span className="text-zinc-500">Reason:</span> {intakeResult.classification.reason}</p>
+                    <p><span className="text-zinc-500">Enrichment status:</span> {intakeResult.enrichmentStatus}. Provider lookup is not wired; no fake product data was created.</p>
+                    <p><span className="text-zinc-500">Provider calls:</span> NO</p>
+                  </>
+                ) : (
+                  <p>Run product intake to classify a barcode, identifier, style code, or search phrase.</p>
+                )}
+              </div>
+            </section>
+
+            <form onSubmit={handlePackageSubmit}>
+              <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Canonical Listing Package</h3>
               <div className="grid gap-4 sm:grid-cols-2">
-                <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Title" />
+                <input value={form.identifier} onChange={(event) => setForm({ ...form, identifier: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Identifier" />
+                <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Editable title" />
                 <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Category" />
                 <input value={form.condition} onChange={(event) => setForm({ ...form, condition: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Condition" />
                 <input value={form.sizeVariant} onChange={(event) => setForm({ ...form, sizeVariant: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Size or variant" />
+                <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Image URL, if real" />
               </div>
               <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="mt-4 min-h-28 w-full resize-none border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Description" />
               <div className="mt-4 grid gap-4 sm:grid-cols-3">
                 <input value={form.costBasis} onChange={(event) => setForm({ ...form, costBasis: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Cost basis" type="number" min="0" step="0.01" />
                 <input value={form.targetPrice} onChange={(event) => setForm({ ...form, targetPrice: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Target price" type="number" min="0" step="0.01" />
                 <div className="border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm">
-                  <span className="text-zinc-500">Margin</span>
+                  <span className="text-zinc-500">Profit preview</span>
                   <span className={`ml-3 font-black ${marginPreview !== null && marginPreview < 0 ? "text-red-400" : "text-emerald-300"}`}>
                     {marginPreview === null ? "Needs cost and price" : `$${marginPreview.toFixed(2)}`}
                   </span>
                 </div>
               </div>
               <input value={form.shippingProfile} onChange={(event) => setForm({ ...form, shippingProfile: event.target.value })} className="mt-4 w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Shipping profile" />
-            </div>
+              <button type="submit" disabled={saving} className="mt-5 w-full bg-red-600 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50">
+                {saving ? "Creating..." : "Create Listing Package"}
+              </button>
+            </form>
           </section>
 
           <aside className="space-y-8">
@@ -283,8 +373,8 @@ function ListingWorkspacePage() {
                 {filteredChannels.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {filteredChannels.map((channel) => (
-                      <button key={channel} type="button" onClick={() => addChannel(channel)} className="border border-zinc-700 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-300 hover:border-red-600">
-                        {channel}
+                      <button key={channel.key} type="button" onClick={() => addChannel(channel.key)} className="border border-zinc-700 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-300 hover:border-red-600">
+                        {channel.label}
                       </button>
                     ))}
                   </div>
@@ -299,38 +389,42 @@ function ListingWorkspacePage() {
                     </span>
                   ))}
                 </div>
+                <p className="mt-4 text-xs leading-relaxed text-zinc-500">Drafts and exports can be generated without a connection. Provider publish remains disabled.</p>
               </div>
             </section>
 
             <section>
-              <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Connected Accounts</h3>
+              <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Connect Existing Account</h3>
               <div className="border border-zinc-800 bg-zinc-950 p-4">
-                <button type="button" disabled className="mb-4 flex w-full items-center justify-center gap-2 border border-zinc-700 px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-500">
-                  <Link className="h-4 w-4" />
-                  Connect Existing Account
-                </button>
-                {connections.length === 0 ? (
-                  <div className="grid gap-2 text-xs text-zinc-400">
-                    <p>Status: NOT_CONNECTED</p>
-                    <p>Monitoring: ON</p>
-                    <p>Publish authorized: FALSE</p>
-                  </div>
-                ) : connections.map((connection) => (
-                  <div key={connection.id} className="mb-2 border border-zinc-800 p-3 text-xs text-zinc-400">
-                    <p className="font-black uppercase tracking-widest text-white">{connection.channel}</p>
-                    <p>Status: {connection.connection_status}</p>
-                    <p>Monitoring: {connection.monitoring_only ? "ON" : "OFF"}</p>
-                    <p>Publish authorized: {connection.publish_authorized ? "TRUE" : "FALSE"}</p>
-                  </div>
-                ))}
+                <p className="mb-4 text-xs leading-relaxed text-zinc-400">OAuth not configured yet. Draft/export mode available.</p>
+                <div className="grid gap-2">
+                  {selectedChannels.map((channel) => {
+                    const connection = connections.find((item) => item.channel === channel);
+                    const status = connection?.connection_status ?? "NOT_CONNECTED";
+                    return (
+                      <div key={channel} className="border border-zinc-800 p-3">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <p className="font-black uppercase tracking-widest">{channel}</p>
+                          <span className={`border px-2 py-1 text-[10px] font-black uppercase tracking-widest ${statusClass(status)}`}>{status}</span>
+                        </div>
+                        <p className="mb-3 text-xs text-zinc-500">Connect account and explicitly authorize publish before live provider actions.</p>
+                        <button type="button" onClick={() => connectChannel(channel)} disabled={connecting === channel} className="flex w-full items-center justify-center gap-2 border border-zinc-700 px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-300 hover:border-white hover:text-white disabled:opacity-50">
+                          {connecting === channel ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link className="h-4 w-4" />}
+                          Connect Existing Account
+                        </button>
+                        <div className="mt-3 grid gap-1 text-xs text-zinc-500">
+                          <p>Monitoring only: {connection?.monitoring_only ?? true ? "TRUE" : "FALSE"}</p>
+                          <p>Publish authorized: {connection?.publish_authorized ? "TRUE" : "FALSE"}</p>
+                          <p>Token storage: {connection?.token_storage_status ?? "NOT_IMPLEMENTED"}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </section>
-
-            <button type="submit" disabled={saving} className="w-full bg-red-600 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50">
-              {saving ? "Creating..." : "Create Listing Package"}
-            </button>
           </aside>
-        </form>
+        </div>
 
         {result && (
           <section className="mt-10 space-y-6">
@@ -352,7 +446,7 @@ function ListingWorkspacePage() {
               ))}
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
-              {result.exports.map((item) => (
+              {result.exports.map((item: ListingExportPackage) => (
                 <div key={item.id} className="border border-zinc-800 bg-zinc-950 p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <h4 className="font-black uppercase tracking-widest">{item.channel} export</h4>

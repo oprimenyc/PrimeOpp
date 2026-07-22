@@ -148,6 +148,17 @@ export const listingPackageSchema = z.object({
   createExports: z.boolean().default(true),
 });
 
+export const productIntakeSchema = z.object({
+  query: z.string().trim().min(1).max(200),
+  source: z.enum(["BARCODE", "MANUAL_IDENTIFIER", "SEARCH"]),
+});
+
+export const channelConnectionSchema = z.object({
+  channel: listingChannelSchema,
+  displayName: z.string().trim().max(120).nullable().optional(),
+  scopesRequested: z.array(z.string().trim().min(1).max(120)).max(30).optional(),
+});
+
 export function validateBody<T extends z.ZodTypeAny>(schema: T) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const parsed = schema.safeParse(req.body);

@@ -93,7 +93,12 @@ describe("low-liability schema and UI guardrails", () => {
 
     expect(page).toContain("Search or add channel");
     expect(page).toContain("Connect Existing Account");
-    expect(page).toContain("Manual Fallback");
+    expect(page).toContain("Manual identifier");
     expect(page).toContain("External publish disabled");
+    expect(page).toContain("Product Intake");
+    expect(page).toContain("Camera scanner not connected yet");
+    expect(page).toContain("Identification Result");
+    expect(page).toContain("OAuth not configured yet. Draft/export mode available.");
+    expect(page).toContain("PrimeOpp prepares listing packages and channel drafts");
   });
 });
