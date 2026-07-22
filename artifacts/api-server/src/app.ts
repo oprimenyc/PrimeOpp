@@ -118,6 +118,12 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+// Anything under /api that didn't match a registered route must return a
+// JSON 404, not fall through to the SPA catch-all below.
+app.all("/api/{*splat}", (_req: Request, res: Response) => {
+  res.status(404).json({ error: "Not found" });
+});
+
 // Serve React frontend
 app.use(express.static(frontendPath));
 
