@@ -65,7 +65,7 @@ DESTRUCTIVE MIGRATIONS:
 NO
 
 COMMIT:
-(recorded after commit — see git log)
+7d9831b (pushed to origin/integration/full-primeopp-platform)
 
 PUSHED:
 YES
