@@ -184,6 +184,67 @@ export interface SessionVerification {
   } | null;
 }
 
+export interface ListingPackageRequest {
+  source: "SCAN" | "SEARCH" | "MANUAL_FALLBACK";
+  identifier: string;
+  identifierType?: string | null;
+  productId?: number | null;
+  product: {
+    title?: string | null;
+    description?: string | null;
+    images?: string[] | null;
+    category?: string | null;
+    condition?: string | null;
+    sizeVariant?: string | null;
+    costBasis?: number | null;
+    targetPrice?: number | null;
+    shippingProfile?: string | null;
+  };
+  selectedChannels: string[];
+  createExports: boolean;
+}
+
+export interface ChannelListingDraft {
+  id: string | number;
+  canonical_listing_id: string | number;
+  channel: string;
+  account_connection_id: string | number | null;
+  channel_status: "DRAFT" | "READY" | "APPROVAL_REQUIRED" | "EXPORTED" | "DISABLED" | "FAILED";
+  channel_payload: Record<string, unknown>;
+  last_validation_error: string | null;
+  publish_disabled_reason: string;
+}
+
+export interface ListingExportPackage {
+  id: string | number;
+  canonical_listing_id: string | number;
+  channel: string;
+  export_format: "COPY_FIELDS" | "CSV" | "JSON" | "API_DRAFT_DISABLED";
+  export_payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ListingPackageResponse {
+  canonicalListingPackageId: string | number;
+  canonicalListingPackage: Record<string, unknown>;
+  channelDrafts: ChannelListingDraft[];
+  exports: ListingExportPackage[];
+  externalPublishEnabled: false;
+  approvalRequired: true;
+  liabilityMode: "seller_publishes_on_own_accounts";
+}
+
+export interface AccountConnectionShell {
+  id: string | number;
+  owner_scope: string;
+  channel: string;
+  connection_status: "NOT_CONNECTED" | "MONITORING_ONLY" | "AUTH_REQUIRED" | "PUBLISH_DISABLED";
+  monitoring_only: boolean;
+  publish_authorized: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 import type { CartItem } from "@/lib/cart";
 
 let csrfToken: string | null = null;
@@ -501,6 +562,26 @@ export async function fetchAuditLog(): Promise<AuditLogEntry[]> {
   const res = await fetch("/api/admin/audit-log", { headers: adminHeaders(), credentials: "same-origin" });
   if (!res.ok) throw new Error("Failed to load audit log");
   return res.json() as Promise<AuditLogEntry[]>;
+}
+
+export async function createListingPackage(data: ListingPackageRequest): Promise<ListingPackageResponse> {
+  const res = await fetch("/api/listings/packages", {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(err?.error ?? "Failed to create listing package");
+  }
+  return res.json() as Promise<ListingPackageResponse>;
+}
+
+export async function fetchAccountConnectionShells(): Promise<AccountConnectionShell[]> {
+  const res = await fetch("/api/listings/account-connections", { headers: adminHeaders(), credentials: "same-origin" });
+  if (!res.ok) throw new Error("Failed to load account connection shells");
+  return res.json() as Promise<AccountConnectionShell[]>;
 }
 
 export async function fetchRevenueDashboard(): Promise<RevenueDashboard> {

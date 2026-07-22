@@ -122,6 +122,32 @@ export const contactMessageSchema = z.object({
   message: z.string().trim().min(10).max(3000),
 });
 
+const listingChannelSchema = z.string()
+  .trim()
+  .min(1)
+  .max(80)
+  .regex(/^[a-zA-Z0-9][a-zA-Z0-9 _-]*$/, "Channel keys may use letters, numbers, spaces, underscores, and hyphens");
+
+export const listingPackageSchema = z.object({
+  source: z.enum(["SCAN", "SEARCH", "MANUAL_FALLBACK"]),
+  identifier: z.string().trim().min(1).max(120),
+  identifierType: z.string().trim().max(40).nullable().optional(),
+  productId: z.number().int().positive().nullable().optional(),
+  product: z.object({
+    title: z.string().trim().max(200).nullable().optional(),
+    description: z.string().trim().max(5000).nullable().optional(),
+    images: z.array(imageReferenceSchema).max(20).nullable().optional(),
+    category: z.string().trim().max(120).nullable().optional(),
+    condition: z.string().trim().max(120).nullable().optional(),
+    sizeVariant: z.string().trim().max(120).nullable().optional(),
+    costBasis: z.number().min(0).nullable().optional(),
+    targetPrice: z.number().min(0).nullable().optional(),
+    shippingProfile: z.string().trim().max(500).nullable().optional(),
+  }),
+  selectedChannels: z.array(listingChannelSchema).min(1).max(25),
+  createExports: z.boolean().default(true),
+});
+
 export function validateBody<T extends z.ZodTypeAny>(schema: T) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const parsed = schema.safeParse(req.body);
