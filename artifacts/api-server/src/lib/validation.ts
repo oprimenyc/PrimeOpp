@@ -153,6 +153,15 @@ export const productIntakeSchema = z.object({
   source: z.enum(["BARCODE", "MANUAL_IDENTIFIER", "SEARCH"]),
 });
 
+export const productIdentifierSchema = z.object({
+  productId: z.number().int().positive(),
+  identifier: z.string().trim().min(1).max(200),
+  identifierType: z.enum(["UPC", "EAN", "GTIN", "SKU", "STYLE_CODE", "ISBN", "OTHER"]),
+  source: z.enum(["MANUAL", "IMPORT", "LOCAL_CATALOG", "GENERATED_REFERENCE"]).default("MANUAL"),
+  confidence: z.enum(["HIGH", "MEDIUM", "LOW"]).default("MEDIUM"),
+  isPrimary: z.boolean().default(false),
+});
+
 export const channelConnectionSchema = z.object({
   channel: listingChannelSchema,
   displayName: z.string().trim().max(120).nullable().optional(),

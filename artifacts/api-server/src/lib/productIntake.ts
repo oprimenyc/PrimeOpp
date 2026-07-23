@@ -24,6 +24,9 @@ export type ProductIntakeIdentifierType =
   | "STYLE_CODE"
   | "PRODUCT_NAME"
   | "UNKNOWN";
+export type ProductIdentifierMapType = "UPC" | "EAN" | "GTIN" | "SKU" | "STYLE_CODE" | "ISBN" | "OTHER";
+export type ProductIdentifierMapSource = "MANUAL" | "IMPORT" | "LOCAL_CATALOG" | "GENERATED_REFERENCE";
+export type LookupSource = "PRODUCT_IDENTIFIER_MAP" | "LOCAL_CATALOG_TITLE_SEARCH" | "NONE";
 
 export type ProductIntakeResult = {
   normalizedIdentifier: string | null;
@@ -35,7 +38,9 @@ export type ProductIntakeResult = {
     reason: string;
   };
   lookupStatus: "FOUND" | "NOT_FOUND" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
-  lookupSource: "LOCAL_CATALOG" | "PRODUCT_ENRICHMENT" | "GENERATED_REFERENCE" | "NONE";
+  lookupSource: LookupSource;
+  matchedIdentifier: string | null;
+  matchedProductId: string | null;
   enrichment: null;
   enrichmentStatus: "AVAILABLE" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
   productCandidate: {
@@ -58,6 +63,14 @@ export type LocalCatalogProduct = {
   description: string | null;
   category: string | null;
   thumbnail_url: string | null;
+};
+
+export type ProductIdentifierMapMatch = LocalCatalogProduct & {
+  matched_identifier: string;
+  matched_product_id: number;
+  matched_identifier_type: ProductIdentifierMapType;
+  matched_confidence: Exclude<ClassificationConfidence, "AMBIGUOUS">;
+  matched_source: ProductIdentifierMapSource;
 };
 
 type ContractClassification = {
@@ -171,6 +184,30 @@ function mapIdentifierType(type: IntakeIdentifierType): ProductIntakeIdentifierT
   return "UNKNOWN";
 }
 
+export function normalizeProductIdentifier(value: string): string {
+  return value.replace(/[\s\-.]/g, "").trim().toUpperCase();
+}
+
+export function identifierMapTypeFor(type: ProductIntakeIdentifierType): ProductIdentifierMapType {
+  if (type === "UPC_A") return "UPC";
+  if (type === "EAN_13") return "EAN";
+  if (type === "GTIN") return "GTIN";
+  if (type === "ISBN") return "ISBN";
+  if (type === "SKU") return "SKU";
+  if (type === "STYLE_CODE") return "STYLE_CODE";
+  return "OTHER";
+}
+
+export function identifierLookupTypesFor(type: ProductIntakeIdentifierType): ProductIdentifierMapType[] {
+  if (type === "UPC_A") return ["UPC", "GTIN"];
+  if (type === "EAN_13") return ["EAN", "GTIN"];
+  if (type === "GTIN") return ["GTIN", "UPC", "EAN"];
+  if (type === "ISBN") return ["ISBN"];
+  if (type === "SKU") return ["SKU"];
+  if (type === "STYLE_CODE") return ["STYLE_CODE"];
+  return ["OTHER"];
+}
+
 function looksLikeProductName(value: string): boolean {
   return /[a-z]/i.test(value) && /\s/.test(value.trim());
 }
@@ -209,6 +246,8 @@ export function classifyProductIntake(query: string, source: ProductIntakeSource
       },
       lookupStatus: "NOT_FOUND",
       lookupSource: "NONE",
+      matchedIdentifier: null,
+      matchedProductId: null,
       enrichment: null,
       enrichmentStatus: "NOT_WIRED",
       productCandidate: { identifiers: {} },
@@ -246,6 +285,8 @@ export function classifyProductIntake(query: string, source: ProductIntakeSource
     },
     lookupStatus: "NOT_WIRED",
     lookupSource: "NONE",
+    matchedIdentifier: null,
+    matchedProductId: null,
     enrichment: null,
     enrichmentStatus: "NOT_WIRED",
     productCandidate: {
@@ -269,6 +310,8 @@ export function applyLocalCatalogLookup(
       ...result,
       lookupStatus: result.identifierType === "PRODUCT_NAME" ? "NOT_FOUND" : "NOT_WIRED",
       lookupSource: "NONE",
+      matchedIdentifier: null,
+      matchedProductId: null,
       enrichmentStatus: result.identifierType === "PRODUCT_NAME" ? "NOT_WIRED" : "PROVIDER_REQUIRED",
     };
   }
@@ -276,7 +319,9 @@ export function applyLocalCatalogLookup(
   return {
     ...result,
     lookupStatus: "FOUND",
-    lookupSource: "LOCAL_CATALOG",
+    lookupSource: "LOCAL_CATALOG_TITLE_SEARCH",
+    matchedIdentifier: null,
+    matchedProductId: String(product.id),
     enrichmentStatus: "AVAILABLE",
     confidence: result.identifierType === "PRODUCT_NAME" ? "HIGH" : result.confidence,
     productCandidate: {
@@ -288,6 +333,44 @@ export function applyLocalCatalogLookup(
       description: product.description ?? undefined,
       category: product.category ?? undefined,
       imageUrl: product.thumbnail_url ?? undefined,
+    },
+    canCreateListingPackage: result.valid,
+  };
+}
+
+export function applyIdentifierMapLookup(
+  result: ProductIntakeResult,
+  match: ProductIdentifierMapMatch | null,
+): ProductIntakeResult {
+  if (!match) {
+    return {
+      ...result,
+      lookupStatus: "NOT_FOUND",
+      lookupSource: "NONE",
+      matchedIdentifier: null,
+      matchedProductId: null,
+      enrichmentStatus: "NOT_WIRED",
+    };
+  }
+
+  return {
+    ...result,
+    lookupStatus: "FOUND",
+    lookupSource: "PRODUCT_IDENTIFIER_MAP",
+    matchedIdentifier: match.matched_identifier,
+    matchedProductId: String(match.matched_product_id),
+    enrichmentStatus: "AVAILABLE",
+    confidence: match.matched_confidence,
+    productCandidate: {
+      identifiers: {
+        ...result.productCandidate.identifiers,
+        [match.matched_identifier_type.toLowerCase()]: match.matched_identifier,
+        localProductId: String(match.matched_product_id),
+      },
+      title: match.title,
+      description: match.description ?? undefined,
+      category: match.category ?? undefined,
+      imageUrl: match.thumbnail_url ?? undefined,
     },
     canCreateListingPackage: result.valid,
   };

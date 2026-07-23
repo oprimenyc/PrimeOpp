@@ -85,6 +85,21 @@ describe("low-liability schema and UI guardrails", () => {
     expect(migration).toContain("credential_plaintext_guard BOOLEAN NOT NULL DEFAULT FALSE");
   });
 
+  it("adds an additive product identifier map with safe local lookup indexes", () => {
+    const migration = readFileSync(
+      path.join(repoRoot, "lib/db/migrations/0010_product_identifiers.sql"),
+      "utf8",
+    );
+
+    expect(migration).toContain("CREATE TABLE IF NOT EXISTS product_identifiers");
+    expect(migration).toContain("product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE");
+    expect(migration).toContain("identifier_type IN ('UPC', 'EAN', 'GTIN', 'SKU', 'STYLE_CODE', 'ISBN', 'OTHER')");
+    expect(migration).toContain("source IN ('MANUAL', 'IMPORT', 'LOCAL_CATALOG', 'GENERATED_REFERENCE')");
+    expect(migration).toContain("confidence IN ('HIGH', 'MEDIUM', 'LOW')");
+    expect(migration).toContain("idx_product_identifiers_normalized_type");
+    expect(migration).toContain("idx_product_identifiers_normalized");
+  });
+
   it("includes the searchable channel picker and account connection shell in the operator UI", () => {
     const page = readFileSync(
       path.join(repoRoot, "artifacts/primeopp/src/pages/listing-workspace.tsx"),
@@ -103,6 +118,9 @@ describe("low-liability schema and UI guardrails", () => {
     expect(page).toContain("BarcodeDetector");
     expect(page).toContain("Identification Result");
     expect(page).toContain("Prefill source");
+    expect(page).toContain("Identifier Mapping");
+    expect(page).toContain("Save identifier mapping");
+    expect(page).toContain("Identifier is unmapped until saved against an existing local product.");
     expect(page).toContain("OAuth not configured yet. Draft/export mode available.");
     expect(page).toContain("PrimeOpp prepares listing packages and channel drafts");
   });

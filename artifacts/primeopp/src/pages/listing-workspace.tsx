@@ -7,6 +7,7 @@ import {
   createListingPackage,
   fetchChannelConnections,
   fetchChannels,
+  saveProductIdentifierMapping,
   verifyToken,
   type ChannelConnection,
   type ChannelDefinition,
@@ -59,7 +60,18 @@ const emptyForm = {
   targetPrice: "",
   shippingProfile: "",
   imageUrl: "",
+  productId: "",
 };
+
+function mappingTypeFor(identifierType: ProductIntakeResponse["identifierType"] | null | undefined): "UPC" | "EAN" | "GTIN" | "SKU" | "STYLE_CODE" | "ISBN" | "OTHER" {
+  if (identifierType === "UPC_A") return "UPC";
+  if (identifierType === "EAN_13") return "EAN";
+  if (identifierType === "GTIN") return "GTIN";
+  if (identifierType === "SKU") return "SKU";
+  if (identifierType === "STYLE_CODE") return "STYLE_CODE";
+  if (identifierType === "ISBN") return "ISBN";
+  return "OTHER";
+}
 
 function money(value: string): number | null {
   if (!value.trim()) return null;
@@ -94,6 +106,7 @@ function ListingWorkspacePage() {
   const [message, setMessage] = useState("");
   const [loadingIntake, setLoadingIntake] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingMapping, setSavingMapping] = useState(false);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [scannerState, setScannerState] = useState<ScannerState>("idle");
   const [scannerMessage, setScannerMessage] = useState("Ready to scan with this browser's local barcode detector.");
@@ -153,6 +166,7 @@ function ListingWorkspacePage() {
       description: candidate.description ?? current.description,
       category: candidate.category ?? current.category,
       imageUrl: candidate.imageUrl ?? current.imageUrl,
+      productId: result.matchedProductId ?? candidate.identifiers.localProductId ?? current.productId,
     }));
   }
 
@@ -320,6 +334,7 @@ function ListingWorkspacePage() {
         source: listingSourceFor(source),
         identifier,
         identifierType: intakeResult?.identifierType ?? null,
+        productId: form.productId.trim() ? Number(form.productId) : null,
         product: {
           title: form.title.trim() || null,
           description: form.description.trim() || null,
@@ -340,6 +355,32 @@ function ListingWorkspacePage() {
       flash(err instanceof Error ? err.message : "Listing package could not be created.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveMapping() {
+    const identifier = form.identifier.trim() || intakeResult?.normalizedIdentifier || query.trim();
+    const productId = Number(form.productId);
+    if (!identifier || !Number.isInteger(productId) || productId <= 0) {
+      flash("Enter an existing local product ID before saving an identifier mapping.");
+      return;
+    }
+    setSavingMapping(true);
+    try {
+      const response = await saveProductIdentifierMapping({
+        productId,
+        identifier,
+        identifierType: mappingTypeFor(intakeResult?.identifierType),
+        source: "MANUAL",
+        confidence: intakeResult?.confidence === "LOW" ? "LOW" : intakeResult?.confidence === "HIGH" ? "HIGH" : "MEDIUM",
+        isPrimary: true,
+      });
+      setForm((current) => ({ ...current, identifier: response.normalizedIdentifier }));
+      flash("Identifier mapping saved locally. No provider call was made.");
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : "Identifier mapping could not be saved.");
+    } finally {
+      setSavingMapping(false);
     }
   }
 
@@ -469,6 +510,32 @@ function ListingWorkspacePage() {
                 ) : (
                   <p>Run product intake to classify a barcode, identifier, style code, or search phrase.</p>
                 )}
+              </div>
+            </section>
+
+            <section>
+              <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Identifier Mapping</h3>
+              <div className="grid gap-4 border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Existing local product ID</label>
+                    <input value={form.productId} onChange={(event) => setForm({ ...form, productId: event.target.value })} className="w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="required to save mapping" type="number" min="1" step="1" />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Identifier type</label>
+                    <div className="border border-zinc-800 bg-black px-4 py-3 font-black uppercase tracking-widest">{mappingTypeFor(intakeResult?.identifierType)}</div>
+                  </div>
+                </div>
+                <div className="grid gap-2 text-xs text-zinc-500">
+                  <p>Normalized value: {form.identifier || intakeResult?.normalizedIdentifier || "UNMAPPED"}</p>
+                  <p>Source/confidence: MANUAL / {intakeResult?.confidence ?? "MEDIUM"}</p>
+                  <p>Status: {intakeResult?.matchedProductId ? `Mapped to product ${intakeResult.matchedProductId}` : "Identifier is unmapped until saved against an existing local product."}</p>
+                  <p>No provider call. No fake match. Package creation can continue while unmapped.</p>
+                </div>
+                <button type="button" onClick={handleSaveMapping} disabled={savingMapping} className="inline-flex items-center justify-center gap-2 border border-zinc-700 px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-300 hover:border-white hover:text-white disabled:opacity-50">
+                  {savingMapping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
+                  Save identifier mapping
+                </button>
               </div>
             </section>
 

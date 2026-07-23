@@ -1,6 +1,13 @@
 import { describe, expect, it, beforeAll } from "vitest";
 import type { AddressInfo } from "node:net";
-import { applyLocalCatalogLookup, classifyProductIntake } from "../src/lib/productIntake.js";
+import {
+  applyIdentifierMapLookup,
+  applyLocalCatalogLookup,
+  classifyProductIntake,
+  identifierMapTypeFor,
+  identifierLookupTypesFor,
+  normalizeProductIdentifier,
+} from "../src/lib/productIntake.js";
 
 beforeAll(() => {
   process.env["DATABASE_URL"] = "postgres://test:test@127.0.0.1:5432/primeopp_test";
@@ -41,6 +48,14 @@ describe("product intake classifier", () => {
     expect(result.productCandidate.title).toBeUndefined();
   });
 
+  it("normalizes identifiers and maps intake types to identifier-map types", () => {
+    expect(normalizeProductIdentifier(" 036-000.291 452 ")).toBe("036000291452");
+    expect(identifierMapTypeFor("UPC_A")).toBe("UPC");
+    expect(identifierMapTypeFor("EAN_13")).toBe("EAN");
+    expect(identifierMapTypeFor("STYLE_CODE")).toBe("STYLE_CODE");
+    expect(identifierLookupTypesFor("UPC_A")).toEqual(["UPC", "GTIN"]);
+  });
+
   it("keeps invalid identifiers honest and cannot create a package", () => {
     const result = classifyProductIntake("12345", "BARCODE");
 
@@ -71,7 +86,7 @@ describe("product intake classifier", () => {
     });
 
     expect(result.lookupStatus).toBe("FOUND");
-    expect(result.lookupSource).toBe("LOCAL_CATALOG");
+    expect(result.lookupSource).toBe("LOCAL_CATALOG_TITLE_SEARCH");
     expect(result.enrichmentStatus).toBe("AVAILABLE");
     expect(result.confidence).toBe("HIGH");
     expect(result.productCandidate).toMatchObject({
@@ -95,6 +110,44 @@ describe("product intake classifier", () => {
     expect(result.productCandidate.title).toBeUndefined();
     expect(result.providerCalls).toBe(false);
   });
+
+  it("maps a valid identifier to a product through product_identifiers", () => {
+    const classified = classifyProductIntake("036000291452", "BARCODE");
+    const result = applyIdentifierMapLookup(classified, {
+      id: 7,
+      title: "Mapped Local Product",
+      description: "Existing mapped product.",
+      category: "mapped",
+      thumbnail_url: null,
+      matched_identifier: "036000291452",
+      matched_product_id: 7,
+      matched_identifier_type: "UPC",
+      matched_confidence: "HIGH",
+      matched_source: "MANUAL",
+    });
+
+    expect(result.lookupStatus).toBe("FOUND");
+    expect(result.lookupSource).toBe("PRODUCT_IDENTIFIER_MAP");
+    expect(result.matchedIdentifier).toBe("036000291452");
+    expect(result.matchedProductId).toBe("7");
+    expect(result.confidence).toBe("HIGH");
+    expect(result.productCandidate.title).toBe("Mapped Local Product");
+    expect(result.productCandidate.identifiers.upc).toBe("036000291452");
+    expect(result.providerCalls).toBe(false);
+    expect(result.publishEnabled).toBe(false);
+  });
+
+  it("returns NOT_FOUND for unmatched identifiers without fake lookup", () => {
+    const classified = classifyProductIntake("036000291452", "BARCODE");
+    const result = applyIdentifierMapLookup(classified, null);
+
+    expect(result.lookupStatus).toBe("NOT_FOUND");
+    expect(result.lookupSource).toBe("NONE");
+    expect(result.matchedIdentifier).toBeNull();
+    expect(result.matchedProductId).toBeNull();
+    expect(result.productCandidate.title).toBeUndefined();
+    expect(result.providerCalls).toBe(false);
+  });
 });
 
 describe("POST /api/products/intake", () => {
@@ -109,7 +162,7 @@ describe("POST /api/products/intake", () => {
       expect(res.status).toBe(200);
       const body = await res.json() as ReturnType<typeof classifyProductIntake>;
       expect(body.identifierType).toBe("UPC_A");
-      expect(body.lookupStatus).toBe("NOT_WIRED");
+      expect(["NOT_FOUND", "FAILED"]).toContain(body.lookupStatus);
       expect(body.lookupSource).toBe("NONE");
       expect(body.confidence).toBe("HIGH");
       expect(body.providerCalls).toBe(false);

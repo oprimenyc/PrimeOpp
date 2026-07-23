@@ -219,7 +219,9 @@ export interface ProductIntakeResponse {
     reason: string;
   };
   lookupStatus: "FOUND" | "NOT_FOUND" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
-  lookupSource: "LOCAL_CATALOG" | "PRODUCT_ENRICHMENT" | "GENERATED_REFERENCE" | "NONE";
+  lookupSource: "PRODUCT_IDENTIFIER_MAP" | "LOCAL_CATALOG_TITLE_SEARCH" | "NONE";
+  matchedIdentifier: string | null;
+  matchedProductId: string | null;
   enrichment: null;
   enrichmentStatus: "AVAILABLE" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
   productCandidate: {
@@ -232,6 +234,31 @@ export interface ProductIntakeResponse {
   };
   confidence: "HIGH" | "MEDIUM" | "LOW" | "AMBIGUOUS";
   canCreateListingPackage: boolean;
+  providerCalls: false;
+  publishEnabled: false;
+}
+
+export interface ProductIdentifierMappingRequest {
+  productId: number;
+  identifier: string;
+  identifierType: "UPC" | "EAN" | "GTIN" | "SKU" | "STYLE_CODE" | "ISBN" | "OTHER";
+  source: "MANUAL" | "IMPORT" | "LOCAL_CATALOG" | "GENERATED_REFERENCE";
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  isPrimary: boolean;
+}
+
+export interface ProductIdentifierMappingResponse {
+  mapping: {
+    id: string | number;
+    product_id: string | number;
+    identifier: string;
+    identifier_type: string;
+    normalized_identifier: string;
+    source: string;
+    confidence: string;
+    is_primary: boolean;
+  };
+  normalizedIdentifier: string;
   providerCalls: false;
   publishEnabled: false;
 }
@@ -664,6 +691,20 @@ export async function classifyProductIntake(data: ProductIntakeRequest): Promise
     throw new Error(err?.error ?? "Product intake could not classify that value.");
   }
   return res.json() as Promise<ProductIntakeResponse>;
+}
+
+export async function saveProductIdentifierMapping(data: ProductIdentifierMappingRequest): Promise<ProductIdentifierMappingResponse> {
+  const res = await fetch("/api/product-identifiers", {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(err?.error ?? "Failed to save identifier mapping");
+  }
+  return res.json() as Promise<ProductIdentifierMappingResponse>;
 }
 
 export async function fetchAccountConnectionShells(): Promise<AccountConnectionShell[]> {
