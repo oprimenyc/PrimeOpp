@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll } from "vitest";
 import type { AddressInfo } from "node:net";
-import { classifyProductIntake } from "../src/lib/productIntake.js";
+import { applyLocalCatalogLookup, classifyProductIntake } from "../src/lib/productIntake.js";
 
 beforeAll(() => {
   process.env["DATABASE_URL"] = "postgres://test:test@127.0.0.1:5432/primeopp_test";
@@ -31,7 +31,10 @@ describe("product intake classifier", () => {
     expect(result.identifierType).toBe("UPC_A");
     expect(result.valid).toBe(true);
     expect(result.classification.confidence).toBe("HIGH");
-    expect(result.enrichmentStatus).toBe("PROVIDER_REQUIRED");
+    expect(result.lookupStatus).toBe("NOT_WIRED");
+    expect(result.lookupSource).toBe("NONE");
+    expect(result.enrichmentStatus).toBe("NOT_WIRED");
+    expect(result.confidence).toBe("HIGH");
     expect(result.enrichment).toBeNull();
     expect(result.providerCalls).toBe(false);
     expect(result.publishEnabled).toBe(false);
@@ -52,8 +55,45 @@ describe("product intake classifier", () => {
 
     expect(result.identifierType).toBe("PRODUCT_NAME");
     expect(result.valid).toBe(true);
-    expect(result.enrichmentStatus).toBe("PROVIDER_REQUIRED");
+    expect(result.lookupStatus).toBe("NOT_WIRED");
+    expect(result.lookupSource).toBe("NONE");
     expect(result.productCandidate.title).toBeUndefined();
+  });
+
+  it("prefills from a real local catalog product when one is provided", () => {
+    const classified = classifyProductIntake("denim jacket", "SEARCH");
+    const result = applyLocalCatalogLookup(classified, {
+      id: 42,
+      title: "Vintage Denim Jacket",
+      description: "Existing catalog description.",
+      category: "apparel",
+      thumbnail_url: "https://example.com/catalog/denim.jpg",
+    });
+
+    expect(result.lookupStatus).toBe("FOUND");
+    expect(result.lookupSource).toBe("LOCAL_CATALOG");
+    expect(result.enrichmentStatus).toBe("AVAILABLE");
+    expect(result.confidence).toBe("HIGH");
+    expect(result.productCandidate).toMatchObject({
+      title: "Vintage Denim Jacket",
+      description: "Existing catalog description.",
+      category: "apparel",
+      imageUrl: "https://example.com/catalog/denim.jpg",
+    });
+    expect(result.productCandidate.identifiers.localProductId).toBe("42");
+    expect(result.providerCalls).toBe(false);
+    expect(result.publishEnabled).toBe(false);
+  });
+
+  it("returns honest no-match status without fake enrichment", () => {
+    const classified = classifyProductIntake("missing catalog product", "SEARCH");
+    const result = applyLocalCatalogLookup(classified, null);
+
+    expect(result.lookupStatus).toBe("NOT_FOUND");
+    expect(result.lookupSource).toBe("NONE");
+    expect(result.enrichmentStatus).toBe("NOT_WIRED");
+    expect(result.productCandidate.title).toBeUndefined();
+    expect(result.providerCalls).toBe(false);
   });
 });
 
@@ -69,7 +109,9 @@ describe("POST /api/products/intake", () => {
       expect(res.status).toBe(200);
       const body = await res.json() as ReturnType<typeof classifyProductIntake>;
       expect(body.identifierType).toBe("UPC_A");
-      expect(body.enrichmentStatus).toBe("PROVIDER_REQUIRED");
+      expect(body.lookupStatus).toBe("NOT_WIRED");
+      expect(body.lookupSource).toBe("NONE");
+      expect(body.confidence).toBe("HIGH");
       expect(body.providerCalls).toBe(false);
       expect(body.publishEnabled).toBe(false);
     });

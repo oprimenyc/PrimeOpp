@@ -96,9 +96,27 @@ describe("low-liability schema and UI guardrails", () => {
     expect(page).toContain("Manual identifier");
     expect(page).toContain("External publish disabled");
     expect(page).toContain("Product Intake");
-    expect(page).toContain("Camera scanner not connected yet");
+    expect(page).toContain("Start Camera Scan");
+    expect(page).toContain("unsupported");
+    expect(page).toContain("permission_denied");
+    expect(page).toContain("decoded");
+    expect(page).toContain("BarcodeDetector");
     expect(page).toContain("Identification Result");
+    expect(page).toContain("Prefill source");
     expect(page).toContain("OAuth not configured yet. Draft/export mode available.");
     expect(page).toContain("PrimeOpp prepares listing packages and channel drafts");
+  });
+
+  it("keeps lookup prefill editable and publishing disabled in the operator UI", () => {
+    const page = readFileSync(
+      path.join(repoRoot, "artifacts/primeopp/src/pages/listing-workspace.tsx"),
+      "utf8",
+    );
+
+    expect(page).toContain("Fields were prefilled from real local catalog data.");
+    expect(page).toContain("All fields remain editable before draft/export creation.");
+    expect(page).toContain("No fake product data was created.");
+    expect(page).toContain("Provider calls:</span> NO");
+    expect(page).toContain("Provider publish remains disabled.");
   });
 });

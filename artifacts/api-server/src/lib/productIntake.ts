@@ -34,8 +34,10 @@ export type ProductIntakeResult = {
     confidence: ClassificationConfidence;
     reason: string;
   };
+  lookupStatus: "FOUND" | "NOT_FOUND" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
+  lookupSource: "LOCAL_CATALOG" | "PRODUCT_ENRICHMENT" | "GENERATED_REFERENCE" | "NONE";
   enrichment: null;
-  enrichmentStatus: "PROVIDER_REQUIRED";
+  enrichmentStatus: "AVAILABLE" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
   productCandidate: {
     identifiers: Record<string, string>;
     title?: string;
@@ -44,9 +46,18 @@ export type ProductIntakeResult = {
     imageUrl?: string;
     category?: string;
   };
+  confidence: ClassificationConfidence;
   canCreateListingPackage: boolean;
   providerCalls: false;
   publishEnabled: false;
+};
+
+export type LocalCatalogProduct = {
+  id: number;
+  title: string;
+  description: string | null;
+  category: string | null;
+  thumbnail_url: string | null;
 };
 
 type ContractClassification = {
@@ -196,9 +207,12 @@ export function classifyProductIntake(query: string, source: ProductIntakeSource
         confidence: "LOW",
         reason: "Query is empty.",
       },
+      lookupStatus: "NOT_FOUND",
+      lookupSource: "NONE",
       enrichment: null,
-      enrichmentStatus: "PROVIDER_REQUIRED",
+      enrichmentStatus: "NOT_WIRED",
       productCandidate: { identifiers: {} },
+      confidence: "LOW",
       canCreateListingPackage: false,
       providerCalls: false,
       publishEnabled: false,
@@ -230,15 +244,51 @@ export function classifyProductIntake(query: string, source: ProductIntakeSource
       confidence,
       reason,
     },
+    lookupStatus: "NOT_WIRED",
+    lookupSource: "NONE",
     enrichment: null,
-    enrichmentStatus: "PROVIDER_REQUIRED",
+    enrichmentStatus: "NOT_WIRED",
     productCandidate: {
       identifiers: {
         [identifierType.toLowerCase()]: normalized,
       },
     },
+    confidence,
     canCreateListingPackage: valid,
     providerCalls: false,
     publishEnabled: false,
+  };
+}
+
+export function applyLocalCatalogLookup(
+  result: ProductIntakeResult,
+  product: LocalCatalogProduct | null,
+): ProductIntakeResult {
+  if (!product) {
+    return {
+      ...result,
+      lookupStatus: result.identifierType === "PRODUCT_NAME" ? "NOT_FOUND" : "NOT_WIRED",
+      lookupSource: "NONE",
+      enrichmentStatus: result.identifierType === "PRODUCT_NAME" ? "NOT_WIRED" : "PROVIDER_REQUIRED",
+    };
+  }
+
+  return {
+    ...result,
+    lookupStatus: "FOUND",
+    lookupSource: "LOCAL_CATALOG",
+    enrichmentStatus: "AVAILABLE",
+    confidence: result.identifierType === "PRODUCT_NAME" ? "HIGH" : result.confidence,
+    productCandidate: {
+      identifiers: {
+        ...result.productCandidate.identifiers,
+        localProductId: String(product.id),
+      },
+      title: product.title,
+      description: product.description ?? undefined,
+      category: product.category ?? undefined,
+      imageUrl: product.thumbnail_url ?? undefined,
+    },
+    canCreateListingPackage: result.valid,
   };
 }

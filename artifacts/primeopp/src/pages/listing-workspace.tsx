@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Ban, Camera, Copy, Download, Link, Loader2, Package, Plus, Search, ShieldCheck, X } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -18,6 +18,28 @@ import {
 
 type IntakeSource = "BARCODE" | "SEARCH" | "MANUAL_IDENTIFIER";
 type ListingSource = "SCAN" | "SEARCH" | "MANUAL_FALLBACK";
+type ScannerState = "idle" | "unsupported" | "permission_denied" | "active" | "paused" | "stopped" | "decoded" | "error";
+
+type BarcodeDetectorFormat =
+  | "aztec"
+  | "code_128"
+  | "code_39"
+  | "code_93"
+  | "codabar"
+  | "data_matrix"
+  | "ean_13"
+  | "ean_8"
+  | "itf"
+  | "pdf417"
+  | "qr_code"
+  | "upc_a"
+  | "upc_e";
+
+type DetectedBarcode = { rawValue: string };
+
+type BarcodeDetectorConstructor = new (options?: { formats?: BarcodeDetectorFormat[] }) => {
+  detect(source: CanvasImageSource): Promise<DetectedBarcode[]>;
+};
 
 const fallbackChannels: ChannelDefinition[] = [
   { key: "general-resale", label: "General resale", category: "resale", draftsAvailable: true, exportsAvailable: true, oauthEnabled: false, publishEnabled: false, safetyMode: "seller_owned_account" },
@@ -73,6 +95,12 @@ function ListingWorkspacePage() {
   const [loadingIntake, setLoadingIntake] = useState(false);
   const [saving, setSaving] = useState(false);
   const [connecting, setConnecting] = useState<string | null>(null);
+  const [scannerState, setScannerState] = useState<ScannerState>("idle");
+  const [scannerMessage, setScannerMessage] = useState("Ready to scan with this browser's local barcode detector.");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<InstanceType<BarcodeDetectorConstructor> | null>(null);
+  const scanTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -128,25 +156,112 @@ function ListingWorkspacePage() {
     }));
   }
 
-  async function handleIntake(event: React.FormEvent) {
-    event.preventDefault();
-    if (!query.trim()) {
+  const stopScanner = useCallback((state: ScannerState = "stopped") => {
+    if (scanTimerRef.current !== null) {
+      window.clearInterval(scanTimerRef.current);
+      scanTimerRef.current = null;
+    }
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setScannerState(state);
+    if (state === "stopped") setScannerMessage("Scanner stopped. Manual identifier fallback remains available.");
+  }, []);
+
+  const runIntake = useCallback(async (rawQuery: string, rawSource: IntakeSource) => {
+    if (!rawQuery.trim()) {
       flash("Enter a UPC, EAN, GTIN, SKU, style code, or product-name search.");
       return;
     }
     setLoadingIntake(true);
     setResult(null);
     try {
-      const response = await classifyProductIntake({ query: query.trim(), source });
+      const response = await classifyProductIntake({ query: rawQuery.trim(), source: rawSource });
       setIntakeResult(response);
       applyCandidate(response);
-      flash(response.valid ? "Identifier classified. Complete missing listing fields manually." : "Identifier needs review before package creation.");
+      if (response.lookupStatus === "FOUND") {
+        flash("Product found in local catalog. Review and edit fields before package creation.");
+      } else {
+        flash(response.valid ? "Identifier classified. Complete missing listing fields manually." : "Identifier needs review before package creation.");
+      }
     } catch (err: unknown) {
       flash(err instanceof Error ? err.message : "Product intake failed.");
     } finally {
       setLoadingIntake(false);
     }
+  }, []);
+
+  async function handleIntake(event: React.FormEvent) {
+    event.preventDefault();
+    await runIntake(query, source);
   }
+
+  async function startScanner() {
+    setSource("BARCODE");
+    const BarcodeDetectorApi = (window as Window & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
+    if (!BarcodeDetectorApi || !navigator.mediaDevices?.getUserMedia) {
+      setScannerState("unsupported");
+      setScannerMessage("Unsupported browser: local BarcodeDetector camera scanning is not available here.");
+      return;
+    }
+
+    try {
+      stopScanner("idle");
+      detectorRef.current = new BarcodeDetectorApi({ formats: ["upc_a", "upc_e", "ean_13", "ean_8", "code_128", "code_39", "qr_code"] });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setScannerState("active");
+      setScannerMessage("Scanner active. Align one barcode in the camera view.");
+
+      scanTimerRef.current = window.setInterval(() => {
+        const video = videoRef.current;
+        const detector = detectorRef.current;
+        if (!video || !detector || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+        detector.detect(video).then((barcodes) => {
+          const decoded = barcodes.find((barcode) => barcode.rawValue.trim());
+          if (!decoded) return;
+          const value = decoded.rawValue.trim();
+          setQuery(value);
+          setForm((current) => ({ ...current, identifier: value }));
+          setScannerMessage(`Decoded ${value}. Running product intake.`);
+          stopScanner("decoded");
+          void runIntake(value, "BARCODE");
+        }).catch(() => {
+          setScannerState("error");
+          setScannerMessage("Scanner error. Stop and retry, or use manual identifier fallback.");
+        });
+      }, 350);
+    } catch (err: unknown) {
+      stopScanner("permission_denied");
+      const denied = err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "SecurityError");
+      setScannerState(denied ? "permission_denied" : "error");
+      setScannerMessage(denied ? "Permission denied. Enable camera access or use manual identifier fallback." : "Camera scanner could not start. Use manual identifier fallback.");
+    }
+  }
+
+  function pauseScanner() {
+    if (scanTimerRef.current !== null) {
+      window.clearInterval(scanTimerRef.current);
+      scanTimerRef.current = null;
+    }
+    setScannerState("paused");
+    setScannerMessage("Scanner paused. Resume scanning or stop the camera.");
+  }
+
+  function resumeScanner() {
+    if (streamRef.current) {
+      void startScanner();
+    }
+  }
+
+  useEffect(() => () => stopScanner("stopped"), [stopScanner]);
 
   function addChannel(channel: string) {
     const normalized = channel.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -290,10 +405,34 @@ function ListingWorkspacePage() {
               </div>
 
               {source === "BARCODE" && (
-                <div className="mb-4 border border-dashed border-zinc-700 bg-zinc-950 p-4 text-sm font-bold uppercase tracking-widest text-zinc-400">
-                  <div className="flex items-center gap-3">
-                    <Camera className="h-5 w-5 text-red-600" />
-                    Camera scanner not connected yet
+                <div className="mb-4 border border-zinc-800 bg-zinc-950 p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="flex items-center gap-2 text-sm font-black uppercase tracking-widest">
+                        <Camera className="h-5 w-5 text-red-600" />
+                        Scan barcode
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-zinc-500">{scannerMessage}</p>
+                    </div>
+                    <span className={`border px-2 py-1 text-[10px] font-black uppercase tracking-widest ${statusClass(scannerState)}`}>{scannerState}</span>
+                  </div>
+                  <div className="overflow-hidden border border-zinc-900 bg-black">
+                    <video ref={videoRef} className="aspect-video w-full bg-black object-cover" muted playsInline aria-label="Barcode scanner camera preview" />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" onClick={startScanner} disabled={scannerState === "active"} className="inline-flex items-center gap-2 bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-white hover:text-black disabled:opacity-50">
+                      <Camera className="h-4 w-4" />
+                      Start Camera Scan
+                    </button>
+                    <button type="button" onClick={pauseScanner} disabled={scannerState !== "active"} className="border border-zinc-700 px-4 py-2 text-xs font-black uppercase tracking-widest text-zinc-300 hover:border-white hover:text-white disabled:opacity-50">
+                      Pause
+                    </button>
+                    <button type="button" onClick={resumeScanner} disabled={scannerState !== "paused"} className="border border-zinc-700 px-4 py-2 text-xs font-black uppercase tracking-widest text-zinc-300 hover:border-white hover:text-white disabled:opacity-50">
+                      Resume
+                    </button>
+                    <button type="button" onClick={() => stopScanner("stopped")} disabled={!streamRef.current} className="border border-zinc-700 px-4 py-2 text-xs font-black uppercase tracking-widest text-zinc-300 hover:border-white hover:text-white disabled:opacity-50">
+                      Stop
+                    </button>
                   </div>
                 </div>
               )}
@@ -319,10 +458,12 @@ function ListingWorkspacePage() {
                       <p><span className="text-zinc-500">Normalized:</span> {intakeResult.normalizedIdentifier ?? "NONE"}</p>
                       <p><span className="text-zinc-500">Identifier type:</span> {intakeResult.identifierType}</p>
                       <p><span className="text-zinc-500">Valid:</span> {intakeResult.valid ? "TRUE" : "FALSE"}</p>
-                      <p><span className="text-zinc-500">Confidence:</span> {intakeResult.classification.confidence}</p>
+                      <p><span className="text-zinc-500">Confidence:</span> {intakeResult.confidence}</p>
+                      <p><span className="text-zinc-500">Lookup status:</span> {intakeResult.lookupStatus}</p>
+                      <p><span className="text-zinc-500">Lookup source:</span> {intakeResult.lookupSource}</p>
                     </div>
                     <p><span className="text-zinc-500">Reason:</span> {intakeResult.classification.reason}</p>
-                    <p><span className="text-zinc-500">Enrichment status:</span> {intakeResult.enrichmentStatus}. Provider lookup is not wired; no fake product data was created.</p>
+                    <p><span className="text-zinc-500">Enrichment status:</span> {intakeResult.enrichmentStatus}. {intakeResult.lookupStatus === "FOUND" ? "Fields were prefilled from real local catalog data." : "No fake product data was created."}</p>
                     <p><span className="text-zinc-500">Provider calls:</span> NO</p>
                   </>
                 ) : (
@@ -333,6 +474,11 @@ function ListingWorkspacePage() {
 
             <form onSubmit={handlePackageSubmit}>
               <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Canonical Listing Package</h3>
+              {intakeResult && (
+                <div className="mb-4 border border-zinc-800 bg-zinc-950 p-3 text-xs leading-relaxed text-zinc-400">
+                  Prefill source: {intakeResult.lookupSource} / {intakeResult.lookupStatus}. Confidence: {intakeResult.confidence}. All fields remain editable before draft/export creation.
+                </div>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <input value={form.identifier} onChange={(event) => setForm({ ...form, identifier: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Identifier" />
                 <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Editable title" />

@@ -218,6 +218,8 @@ export interface ProductIntakeResponse {
     confidence: "HIGH" | "MEDIUM" | "LOW" | "AMBIGUOUS";
     reason: string;
   };
+  lookupStatus: "FOUND" | "NOT_FOUND" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
+  lookupSource: "LOCAL_CATALOG" | "PRODUCT_ENRICHMENT" | "GENERATED_REFERENCE" | "NONE";
   enrichment: null;
   enrichmentStatus: "AVAILABLE" | "NOT_WIRED" | "PROVIDER_REQUIRED" | "FAILED";
   productCandidate: {
@@ -228,6 +230,7 @@ export interface ProductIntakeResponse {
     category?: string;
     identifiers: Record<string, string>;
   };
+  confidence: "HIGH" | "MEDIUM" | "LOW" | "AMBIGUOUS";
   canCreateListingPackage: boolean;
   providerCalls: false;
   publishEnabled: false;
