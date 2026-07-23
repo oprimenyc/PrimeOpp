@@ -96,25 +96,35 @@ router.post("/products/intake", validateBody(productIntakeSchema), async (req, r
 router.post("/product-identifiers", requirePermission("products:write"), validateBody(productIdentifierSchema), async (req, res) => {
   try {
     const normalizedIdentifier = normalizeProductIdentifier(req.body.identifier);
+    const rawIdentifier = req.body.identifier.trim();
     const rows = await query(
       `INSERT INTO product_identifiers
-        (product_id, identifier, identifier_type, normalized_identifier, source, confidence, is_primary)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+        (product_id, identifier, identifier_type, normalized_identifier, raw_identifier,
+         namespace, retailer_id, platform_id, source, confidence, is_primary)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT (normalized_identifier, identifier_type)
        DO UPDATE SET
          product_id = EXCLUDED.product_id,
          identifier = EXCLUDED.identifier,
+         raw_identifier = EXCLUDED.raw_identifier,
+         namespace = EXCLUDED.namespace,
+         retailer_id = EXCLUDED.retailer_id,
+         platform_id = EXCLUDED.platform_id,
          source = EXCLUDED.source,
          confidence = EXCLUDED.confidence,
          is_primary = EXCLUDED.is_primary,
          updated_at = NOW()
-       RETURNING id, product_id, identifier, identifier_type, normalized_identifier,
-                 source, confidence, is_primary, created_at, updated_at`,
+       RETURNING id, product_id, identifier, identifier_type, normalized_identifier, raw_identifier,
+                 namespace, retailer_id, platform_id, source, confidence, is_primary, created_at, updated_at`,
       [
         req.body.productId,
-        req.body.identifier.trim(),
+        rawIdentifier,
         req.body.identifierType,
         normalizedIdentifier,
+        rawIdentifier,
+        req.body.namespace ?? "UNIVERSAL",
+        req.body.retailerId ?? null,
+        req.body.platformId ?? null,
         req.body.source,
         req.body.confidence,
         req.body.isPrimary,

@@ -26,7 +26,13 @@ export type ProductIntakeIdentifierType =
   | "UNKNOWN";
 export type ProductIdentifierMapType = "UPC" | "EAN" | "GTIN" | "SKU" | "STYLE_CODE" | "ISBN" | "OTHER";
 export type ProductIdentifierMapSource = "MANUAL" | "IMPORT" | "LOCAL_CATALOG" | "GENERATED_REFERENCE";
-export type LookupSource = "PRODUCT_IDENTIFIER_MAP" | "LOCAL_CATALOG_TITLE_SEARCH" | "NONE";
+export type LookupSource =
+  | "PRODUCT_IDENTIFIER_MAP"
+  | "LOCAL_CATALOG_TITLE_SEARCH"
+  | "LOCAL_CATALOG"
+  | "RETAILER_ADAPTER"
+  | "PLATFORM_ADAPTER"
+  | "NONE";
 
 export type ProductIntakeResult = {
   normalizedIdentifier: string | null;

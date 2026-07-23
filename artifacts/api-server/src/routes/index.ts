@@ -9,6 +9,9 @@ import contactRouter from "./contact.js";
 import listingsRouter from "./listings.js";
 import productIntakeRouter from "./product-intake.js";
 import channelsRouter from "./channels.js";
+import retailersRouter from "./retailers.js";
+import pricingRouter from "./pricing.js";
+import oauthRouter from "./oauth.js";
 
 const router: IRouter = Router();
 
@@ -22,5 +25,8 @@ router.use(revenueRouter);
 router.use(contactRouter);
 router.use(listingsRouter);
 router.use(channelsRouter);
+router.use(retailersRouter);
+router.use(pricingRouter);
+router.use(oauthRouter);
 
 export default router;

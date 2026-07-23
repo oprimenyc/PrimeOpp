@@ -122,7 +122,7 @@ describe("low-liability schema and UI guardrails", () => {
     expect(page).toContain("Save identifier mapping");
     expect(page).toContain("Identifier is unmapped until saved against an existing local product.");
     expect(page).toContain("OAuth not configured yet. Draft/export mode available.");
-    expect(page).toContain("PrimeOpp prepares listing packages and channel drafts");
+    expect(page).toContain("PrimeOpp provides product, inventory, pricing, and listing intelligence");
   });
 
   it("keeps lookup prefill editable and publishing disabled in the operator UI", () => {

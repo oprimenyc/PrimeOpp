@@ -2,19 +2,32 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Ban, Camera, Copy, Download, Link, Loader2, Package, Plus, Search, ShieldCheck, X } from "lucide-react";
 import { useLocation } from "wouter";
 import {
+  calculateFees,
   classifyProductIntake,
   createChannelConnection,
   createListingPackage,
   fetchChannelConnections,
   fetchChannels,
+  fetchMarketPricing,
+  fetchOAuthProviders,
+  fetchPlatformPricingStatus,
+  fetchRetailers,
+  lookupStoreAvailability,
   saveProductIdentifierMapping,
+  startOAuth,
   verifyToken,
   type ChannelConnection,
   type ChannelDefinition,
   type ChannelListingDraft,
+  type FeeCalculation,
   type ListingExportPackage,
   type ListingPackageResponse,
+  type OAuthProviderStatus,
+  type PlatformPriceResult,
+  type PlatformPricingStatus,
   type ProductIntakeResponse,
+  type RetailerAdapterStatus,
+  type StoreLookupResult,
 } from "@/lib/api";
 
 type IntakeSource = "BARCODE" | "SEARCH" | "MANUAL_IDENTIFIER";
@@ -110,6 +123,28 @@ function ListingWorkspacePage() {
   const [connecting, setConnecting] = useState<string | null>(null);
   const [scannerState, setScannerState] = useState<ScannerState>("idle");
   const [scannerMessage, setScannerMessage] = useState("Ready to scan with this browser's local barcode detector.");
+  // Retail intelligence: store availability
+  const [retailers, setRetailers] = useState<RetailerAdapterStatus[]>([]);
+  const [selectedRetailers, setSelectedRetailers] = useState<string[]>([]);
+  const [postalCode, setPostalCode] = useState("");
+  const [radiusMiles, setRadiusMiles] = useState("25");
+  const [storeResult, setStoreResult] = useState<StoreLookupResult | null>(null);
+  const [loadingStores, setLoadingStores] = useState(false);
+  // Retail intelligence: market pricing + fees
+  const [pricingPlatforms, setPricingPlatforms] = useState<PlatformPricingStatus[]>([]);
+  const [selectedPricingPlatforms, setSelectedPricingPlatforms] = useState<string[]>([]);
+  const [condition, setCondition] = useState("UNKNOWN");
+  const [marketResults, setMarketResults] = useState<PlatformPriceResult[]>([]);
+  const [loadingPricing, setLoadingPricing] = useState(false);
+  const [feeResult, setFeeResult] = useState<FeeCalculation | null>(null);
+  const [feePercent, setFeePercent] = useState("13");
+  const [paymentPercent, setPaymentPercent] = useState("2.9");
+  const [shippingMode, setShippingMode] = useState<"SELLER_ENTERED" | "UNKNOWN">("UNKNOWN");
+  const [shippingAmount, setShippingAmount] = useState("");
+  const [calculatingFees, setCalculatingFees] = useState(false);
+  // OAuth providers
+  const [oauthProviders, setOauthProviders] = useState<OAuthProviderStatus[]>([]);
+  const [oauthNote, setOauthNote] = useState<Record<string, string>>({});
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<InstanceType<BarcodeDetectorConstructor> | null>(null);
@@ -123,12 +158,18 @@ function ListingWorkspacePage() {
         return;
       }
       try {
-        const [channelList, connectionList] = await Promise.all([
+        const [channelList, connectionList, retailerList, pricingList, providerList] = await Promise.all([
           fetchChannels(),
           fetchChannelConnections().catch(() => []),
+          fetchRetailers().catch(() => []),
+          fetchPlatformPricingStatus().catch(() => []),
+          fetchOAuthProviders().catch(() => []),
         ]);
         setChannels(channelList.length ? channelList : fallbackChannels);
         setConnections(connectionList);
+        setRetailers(retailerList);
+        setPricingPlatforms(pricingList);
+        setOauthProviders(providerList);
       } catch {
         setChannels(fallbackChannels);
         setConnections([]);
@@ -358,6 +399,103 @@ function ListingWorkspacePage() {
     }
   }
 
+  function toggleFrom(list: string[], setter: (v: string[]) => void, value: string) {
+    setter(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
+  }
+
+  async function handleStoreLookup() {
+    if (selectedRetailers.length === 0) {
+      flash("Select at least one retailer for store availability.");
+      return;
+    }
+    setLoadingStores(true);
+    try {
+      const productId = form.productId.trim() ? Number(form.productId) : intakeResult?.matchedProductId ? Number(intakeResult.matchedProductId) : null;
+      const response = await lookupStoreAvailability({
+        productId,
+        normalizedIdentifier: intakeResult?.normalizedIdentifier ?? (form.identifier.trim() || null),
+        identifierType: intakeResult?.identifierType ?? null,
+        retailers: selectedRetailers,
+        location: { postalCode: postalCode.trim() || null, radiusMiles: money(radiusMiles) },
+      });
+      setStoreResult(response);
+      flash("Store availability lookup returned honest per-retailer states. No provider was called.");
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : "Store lookup failed.");
+    } finally {
+      setLoadingStores(false);
+    }
+  }
+
+  async function handleMarketPricing() {
+    if (selectedPricingPlatforms.length === 0) {
+      flash("Select at least one marketplace for pricing.");
+      return;
+    }
+    setLoadingPricing(true);
+    try {
+      const productId = form.productId.trim() ? Number(form.productId) : intakeResult?.matchedProductId ? Number(intakeResult.matchedProductId) : null;
+      const response = await fetchMarketPricing({
+        productId,
+        normalizedIdentifier: intakeResult?.normalizedIdentifier ?? (form.identifier.trim() || null),
+        identifierType: intakeResult?.identifierType ?? null,
+        platforms: selectedPricingPlatforms,
+        condition,
+      });
+      setMarketResults(response.results);
+      flash("Selected-platform pricing returned. Active and sold prices stay separate.");
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : "Market pricing failed.");
+    } finally {
+      setLoadingPricing(false);
+    }
+  }
+
+  async function handleCalculateFees() {
+    const price = money(form.targetPrice);
+    if (price === null) {
+      flash("Enter a target list price before calculating fees.");
+      return;
+    }
+    setCalculatingFees(true);
+    try {
+      const response = await calculateFees({
+        listPrice: price,
+        feeSchedule: {
+          percentageFee: (money(feePercent) ?? 0) / 100,
+          fixedFee: 0.3,
+          paymentProcessingPercent: (money(paymentPercent) ?? 0) / 100,
+          paymentProcessingFixed: 0.3,
+        },
+        shipping: { mode: shippingMode, amount: shippingMode === "UNKNOWN" ? null : money(shippingAmount) },
+        costBasis: money(form.costBasis),
+      });
+      setFeeResult(response.calculation);
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : "Fee calculation failed.");
+    } finally {
+      setCalculatingFees(false);
+    }
+  }
+
+  async function handleStartOAuth(provider: string) {
+    setConnecting(provider);
+    try {
+      const response = await startOAuth(provider);
+      if (response.status === "READY" && response.authorizationUrl) {
+        setOauthNote((current) => ({ ...current, [provider]: "Authorization URL ready. Open it in your own browser to authorize." }));
+      } else if (response.status === "NOT_CONFIGURED") {
+        setOauthNote((current) => ({ ...current, [provider]: `NOT_CONFIGURED. Required env: ${(response.requiredEnv ?? []).join(", ")}` }));
+      } else {
+        setOauthNote((current) => ({ ...current, [provider]: response.reason ?? response.status }));
+      }
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : "OAuth start failed.");
+    } finally {
+      setConnecting(null);
+    }
+  }
+
   async function handleSaveMapping() {
     const identifier = form.identifier.trim() || intakeResult?.normalizedIdentifier || query.trim();
     const productId = Number(form.productId);
@@ -410,7 +548,7 @@ function ListingWorkspacePage() {
                 Safety Boundary
               </h2>
               <p className="mt-2 max-w-4xl text-sm leading-relaxed text-zinc-400">
-                PrimeOpp prepares listing packages and channel drafts. You publish through your own marketplace accounts. PrimeOpp does not handle buyer payments, payouts, escrow, fulfillment, or disputes.
+                PrimeOpp provides product, inventory, pricing, and listing intelligence. Store availability and market prices may change. You publish through your own marketplace accounts. PrimeOpp does not handle buyer payments, seller payouts, escrow, fulfillment, or disputes.
               </p>
             </div>
             <div className="flex items-center gap-2 border border-zinc-700 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-300">
@@ -638,6 +776,183 @@ function ListingWorkspacePage() {
             </section>
           </aside>
         </div>
+
+        {/* ── Store Availability ─────────────────────────────────────────── */}
+        <section className="mt-10">
+          <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Store Availability</h3>
+          <div className="border border-zinc-800 bg-zinc-950 p-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Postal code</label>
+                <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="e.g. 10001" />
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Radius (miles)</label>
+                <input value={radiusMiles} onChange={(e) => setRadiusMiles(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" type="number" min="0" max="500" />
+              </div>
+              <div className="flex items-end">
+                <button type="button" onClick={handleStoreLookup} disabled={loadingStores} className="flex w-full items-center justify-center gap-2 bg-red-600 px-4 py-3 text-xs font-black uppercase tracking-widest hover:bg-white hover:text-black disabled:opacity-50">
+                  {loadingStores ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Find Stores
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {retailers.map((retailer) => (
+                <button key={retailer.key} type="button" onClick={() => toggleFrom(selectedRetailers, setSelectedRetailers, retailer.key)} className={`border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${selectedRetailers.includes(retailer.key) ? "border-red-600 bg-red-950/40 text-red-200" : "border-zinc-700 text-zinc-400 hover:border-white"}`} title={retailer.status === "NOT_CONFIGURED" ? `Requires: ${retailer.requiredEnv.join(", ")}` : retailer.status}>
+                  {retailer.label} · {retailer.status}
+                </button>
+              ))}
+            </div>
+            {storeResult && (
+              <div className="mt-4 grid gap-3">
+                {storeResult.results.map((r) => (
+                  <div key={r.retailer} className="border border-zinc-800 bg-black p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="font-black uppercase tracking-widest">{r.retailer}</p>
+                      <span className={`border px-2 py-1 text-[10px] font-black uppercase tracking-widest ${statusClass(r.lookupStatus)}`}>{r.lookupStatus}</span>
+                    </div>
+                    {r.stores.length === 0 ? (
+                      <p className="text-xs text-zinc-500">
+                        {r.lookupStatus === "NOT_CONFIGURED" ? `No configured inventory source. Required env: ${(r.requiredEnv ?? []).join(", ") || "provider credentials"}.` : "No supported store observations. Quantity is never invented from a status."}
+                      </p>
+                    ) : (
+                      <div className="grid gap-2">
+                        {r.stores.map((s) => (
+                          <div key={s.externalStoreId} className="grid gap-1 border border-zinc-900 p-2 text-xs text-zinc-300 sm:grid-cols-2">
+                            <p><span className="text-zinc-500">Store:</span> {s.storeName}</p>
+                            <p><span className="text-zinc-500">Availability:</span> {s.availabilityStatus}</p>
+                            <p><span className="text-zinc-500">Quantity:</span> {s.quantity === null ? "N/A (nullable)" : s.quantity} ({s.quantityConfidence})</p>
+                            <p><span className="text-zinc-500">Local price:</span> {s.localPrice === null ? "N/A" : `$${s.localPrice.toFixed(2)}`}</p>
+                            <p><span className="text-zinc-500">Observed:</span> {s.observedAt ?? "UNKNOWN"} · {s.freshness}</p>
+                            <p><span className="text-zinc-500">Source:</span> {s.source}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="mt-4 text-xs leading-relaxed text-zinc-500">Quantity is only shown when a source truly supplies it. Stale data is always shown with its timestamp and freshness label.</p>
+          </div>
+        </section>
+
+        {/* ── Platform Selection + Market Pricing ────────────────────────── */}
+        <section className="mt-10">
+          <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Market Pricing</h3>
+          <div className="border border-zinc-800 bg-zinc-950 p-4">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Condition</label>
+              <select value={condition} onChange={(e) => setCondition(e.target.value)} className="border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs uppercase tracking-widest outline-none focus:border-red-600">
+                {["UNKNOWN", "NEW", "USED", "REFURBISHED", "OPEN_BOX"].map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <button type="button" onClick={handleMarketPricing} disabled={loadingPricing} className="ml-auto flex items-center gap-2 bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-widest hover:bg-white hover:text-black disabled:opacity-50">
+                {loadingPricing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                Get Pricing
+              </button>
+            </div>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {pricingPlatforms.map((p) => (
+                <button key={p.key} type="button" onClick={() => toggleFrom(selectedPricingPlatforms, setSelectedPricingPlatforms, p.key)} className={`border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${selectedPricingPlatforms.includes(p.key) ? "border-red-600 bg-red-950/40 text-red-200" : "border-zinc-700 text-zinc-400 hover:border-white"}`} title={p.status === "NOT_CONFIGURED" ? `Requires: ${p.requiredEnv.join(", ")}` : p.status}>
+                  {p.label} · {p.status}
+                </button>
+              ))}
+            </div>
+            {marketResults.length > 0 && (
+              <div className="grid gap-3">
+                {marketResults.map((m) => (
+                  <div key={m.platform} className="border border-zinc-800 bg-black p-3 text-xs text-zinc-300">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="font-black uppercase tracking-widest">{m.platform}</p>
+                      <span className={`border px-2 py-1 text-[10px] font-black uppercase tracking-widest ${statusClass(m.sourceStatus)}`}>{m.sourceStatus}</span>
+                    </div>
+                    <div className="grid gap-1 sm:grid-cols-2">
+                      <p><span className="text-zinc-500">Active (asking):</span> {m.active.median === null ? "N/A" : `$${m.active.median}`} · samples {m.active.sampleCount ?? "N/A"}</p>
+                      <p><span className="text-zinc-500">Sold comps:</span> {m.sold.median === null ? "N/A" : `$${m.sold.median}`} · samples {m.sold.sampleCount ?? "N/A"}</p>
+                      <p><span className="text-zinc-500">Condition:</span> {m.condition}</p>
+                      <p><span className="text-zinc-500">Match confidence:</span> {m.matchConfidence}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="mt-4 text-xs leading-relaxed text-zinc-500">Active asking prices and sold comps are shown separately. No recommendation is produced from insufficient or fabricated data.</p>
+          </div>
+        </section>
+
+        {/* ── Fees / Shipping / Net / Profit ─────────────────────────────── */}
+        <section className="mt-10">
+          <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Fees, Shipping &amp; Profit</h3>
+          <div className="border border-zinc-800 bg-zinc-950 p-4">
+            <div className="grid gap-4 sm:grid-cols-4">
+              <div>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Platform fee %</label>
+                <input value={feePercent} onChange={(e) => setFeePercent(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" type="number" min="0" step="0.1" />
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Payment fee %</label>
+                <input value={paymentPercent} onChange={(e) => setPaymentPercent(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" type="number" min="0" step="0.1" />
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Shipping</label>
+                <select value={shippingMode} onChange={(e) => setShippingMode(e.target.value as "SELLER_ENTERED" | "UNKNOWN")} className="w-full border border-zinc-700 bg-zinc-900 px-3 py-3 text-xs uppercase tracking-widest outline-none focus:border-red-600">
+                  <option value="UNKNOWN">UNKNOWN</option>
+                  <option value="SELLER_ENTERED">Seller-entered</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Shipping $</label>
+                <input value={shippingAmount} onChange={(e) => setShippingAmount(e.target.value)} disabled={shippingMode === "UNKNOWN"} className="w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600 disabled:opacity-40" type="number" min="0" step="0.01" />
+              </div>
+            </div>
+            <button type="button" onClick={handleCalculateFees} disabled={calculatingFees} className="mt-4 flex items-center gap-2 bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-widest hover:bg-white hover:text-black disabled:opacity-50">
+              {calculatingFees ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
+              Calculate Net &amp; Profit
+            </button>
+            {feeResult && (
+              <div className="mt-4 grid gap-2 border border-zinc-800 bg-black p-4 text-sm text-zinc-300 sm:grid-cols-2">
+                <p><span className="text-zinc-500">Gross selling price:</span> ${feeResult.grossSellingPrice.toFixed(2)}</p>
+                <p><span className="text-zinc-500">Platform fees:</span> ${feeResult.platformFees.toFixed(2)}</p>
+                <p><span className="text-zinc-500">Payment fees:</span> ${feeResult.paymentFees.toFixed(2)}</p>
+                <p><span className="text-zinc-500">Shipping:</span> {feeResult.shippingState === "UNKNOWN" ? "UNKNOWN (not assumed)" : `$${(feeResult.shippingCost ?? 0).toFixed(2)}`}</p>
+                <p><span className="text-zinc-500">Cost basis:</span> {feeResult.costBasis === null ? "N/A" : `$${feeResult.costBasis.toFixed(2)}`}</p>
+                <p><span className="text-zinc-500">Net proceeds:</span> {feeResult.netProceeds === null ? "Needs shipping" : `$${feeResult.netProceeds.toFixed(2)}`}</p>
+                <p><span className="text-zinc-500">Estimated profit:</span> <span className={feeResult.estimatedProfit !== null && feeResult.estimatedProfit < 0 ? "text-red-400" : "text-emerald-300"}>{feeResult.estimatedProfit === null ? feeResult.profitState : `$${feeResult.estimatedProfit.toFixed(2)}`}</span></p>
+                <p><span className="text-zinc-500">Margin:</span> {feeResult.marginPercent === null ? "N/A" : `${feeResult.marginPercent.toFixed(1)}%`}</p>
+              </div>
+            )}
+            <p className="mt-4 text-xs leading-relaxed text-zinc-500">Shipping is never silently assumed — an UNKNOWN state leaves net proceeds and profit unresolved rather than invented.</p>
+          </div>
+        </section>
+
+        {/* ── Account Connections (OAuth) ────────────────────────────────── */}
+        <section className="mt-10">
+          <h3 className="mb-4 border-b-2 border-white pb-3 text-lg font-black uppercase tracking-widest">Account Connections (OAuth)</h3>
+          <div className="border border-zinc-800 bg-zinc-950 p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {oauthProviders.map((p) => (
+                <div key={p.key} className="border border-zinc-800 bg-black p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="font-black uppercase tracking-widest">{p.label}</p>
+                    <span className={`border px-2 py-1 text-[10px] font-black uppercase tracking-widest ${statusClass(p.status)}`}>{p.status}</span>
+                  </div>
+                  <div className="mb-3 grid gap-1 text-xs text-zinc-500">
+                    <p>Monitoring only: TRUE</p>
+                    <p>Publish authorized: FALSE</p>
+                    <p>Supports OAuth: {p.supportsOAuth ? "YES" : "NO"} · PKCE: {p.supportsPkce ? "YES" : "NO"}</p>
+                  </div>
+                  <button type="button" onClick={() => handleStartOAuth(p.key)} disabled={connecting === p.key || !p.supportsOAuth} className="flex w-full items-center justify-center gap-2 border border-zinc-700 px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-300 hover:border-white hover:text-white disabled:opacity-40">
+                    {connecting === p.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link className="h-4 w-4" />}
+                    {p.supportsOAuth ? "Connect Account" : "OAuth Unsupported"}
+                  </button>
+                  {oauthNote[p.key] && <p className="mt-3 text-xs text-amber-300">{oauthNote[p.key]}</p>}
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-xs leading-relaxed text-zinc-500">Connections default to monitoring-only with publishing disabled. Tokens, when a live flow is configured, are stored encrypted — never in plaintext. External publish remains disabled in this build.</p>
+          </div>
+        </section>
 
         {result && (
           <section className="mt-10 space-y-6">

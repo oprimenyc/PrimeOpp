@@ -153,13 +153,77 @@ export const productIntakeSchema = z.object({
   source: z.enum(["BARCODE", "MANUAL_IDENTIFIER", "SEARCH"]),
 });
 
+export const PRODUCT_IDENTIFIER_TYPES = [
+  // Universal
+  "UPC", "UPC_A", "EAN", "EAN_13", "GTIN", "ISBN", "SKU", "MODEL_NUMBER", "STYLE_CODE", "MPN",
+  // Retailer-specific
+  "TARGET_TCIN", "WALMART_ITEM_ID", "BEST_BUY_SKU", "HOME_DEPOT_ITEM_ID", "LOWES_ITEM_ID", "OTHER_RETAILER_ID",
+  // Marketplace-specific
+  "AMAZON_ASIN", "EBAY_EPID", "MERCARI_ITEM_ID", "POSHMARK_ITEM_ID", "OTHER_PLATFORM_ID",
+  // Catch-all
+  "OTHER",
+] as const;
+
 export const productIdentifierSchema = z.object({
   productId: z.number().int().positive(),
   identifier: z.string().trim().min(1).max(200),
-  identifierType: z.enum(["UPC", "EAN", "GTIN", "SKU", "STYLE_CODE", "ISBN", "OTHER"]),
+  identifierType: z.enum(PRODUCT_IDENTIFIER_TYPES),
+  namespace: z.enum(["UNIVERSAL", "RETAILER", "MARKETPLACE"]).default("UNIVERSAL"),
+  retailerId: z.number().int().positive().nullable().optional(),
+  platformId: z.string().trim().max(80).nullable().optional(),
   source: z.enum(["MANUAL", "IMPORT", "LOCAL_CATALOG", "GENERATED_REFERENCE"]).default("MANUAL"),
   confidence: z.enum(["HIGH", "MEDIUM", "LOW"]).default("MEDIUM"),
   isPrimary: z.boolean().default(false),
+});
+
+const platformKeySchema = z.string().trim().min(1).max(60).regex(/^[a-z0-9][a-z0-9-]*$/, "Platform keys are lowercase kebab-case");
+
+export const storeLookupSchema = z.object({
+  productId: z.number().int().positive().nullable().optional(),
+  normalizedIdentifier: z.string().trim().max(120).nullable().optional(),
+  identifierType: z.string().trim().max(40).nullable().optional(),
+  retailers: z.array(z.string().trim().min(1).max(60)).min(1).max(10),
+  location: z.object({
+    postalCode: z.string().trim().max(20).nullable().optional(),
+    city: z.string().trim().max(120).nullable().optional(),
+    region: z.string().trim().max(120).nullable().optional(),
+    latitude: z.number().min(-90).max(90).nullable().optional(),
+    longitude: z.number().min(-180).max(180).nullable().optional(),
+    radiusMiles: z.number().min(0).max(500).nullable().optional(),
+  }),
+});
+
+export const marketPricingSchema = z.object({
+  productId: z.number().int().positive().nullable().optional(),
+  normalizedIdentifier: z.string().trim().max(120).nullable().optional(),
+  identifierType: z.string().trim().max(40).nullable().optional(),
+  platforms: z.array(platformKeySchema).min(1).max(10),
+  condition: z.enum(["NEW", "USED", "REFURBISHED", "OPEN_BOX", "UNKNOWN"]).default("UNKNOWN"),
+});
+
+export const feeCalculationSchema = z.object({
+  listPrice: z.number().min(0).max(1_000_000),
+  platform: z.string().trim().max(60).nullable().optional(),
+  feeSchedule: z.object({
+    percentageFee: z.number().min(0).max(1),
+    fixedFee: z.number().min(0).max(1000),
+    paymentProcessingPercent: z.number().min(0).max(1),
+    paymentProcessingFixed: z.number().min(0).max(1000),
+    promotionalPercent: z.number().min(0).max(1).optional(),
+    source: z.string().trim().max(120).optional(),
+    version: z.string().trim().max(40).optional(),
+  }),
+  shipping: z.object({
+    mode: z.enum(["SELLER_ENTERED", "SAVED_PROFILE", "PLATFORM_CALCULATED", "UNKNOWN"]),
+    amount: z.number().min(0).max(100_000).nullable(),
+  }),
+  costBasis: z.number().min(0).max(1_000_000).nullable().optional(),
+  currency: z.string().trim().length(3).optional(),
+});
+
+export const oauthStartSchema = z.object({
+  displayName: z.string().trim().max(120).nullable().optional(),
+  scopes: z.array(z.string().trim().min(1).max(120)).max(30).optional(),
 });
 
 export const channelConnectionSchema = z.object({

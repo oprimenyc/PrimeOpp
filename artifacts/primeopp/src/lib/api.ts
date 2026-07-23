@@ -741,6 +741,187 @@ export async function createChannelConnection(channel: string): Promise<ChannelC
   return res.json() as Promise<ChannelConnectionCreateResponse>;
 }
 
+// ── Retail intelligence: retailers / store lookup ──────────────────────────
+export type RetailerAdapterStatus = {
+  key: string;
+  label: string;
+  category: string;
+  priority: number;
+  enabled: boolean;
+  experimental: boolean;
+  configured: boolean;
+  requiredEnv: string[];
+  status: "READY" | "NOT_CONFIGURED" | "DISABLED_EXPERIMENTAL";
+};
+
+export type StoreAvailability = {
+  storeName: string;
+  externalStoreId: string;
+  city: string | null;
+  region: string | null;
+  postalCode: string | null;
+  availabilityStatus: string;
+  quantity: number | null;
+  quantityConfidence: string;
+  localPrice: number | null;
+  currency: string | null;
+  observedAt: string | null;
+  source: string;
+  sourceStatus: string;
+  freshness: string;
+};
+
+export type StoreLookupResult = {
+  results: Array<{
+    retailer: string;
+    adapterStatus: string;
+    category?: string;
+    configured?: boolean;
+    requiredEnv?: string[];
+    stores: StoreAvailability[];
+    lookupStatus: string;
+  }>;
+  providerCalls: boolean;
+  publishEnabled: boolean;
+};
+
+export async function fetchRetailers(): Promise<RetailerAdapterStatus[]> {
+  const res = await fetch("/api/retailers", { credentials: "same-origin" });
+  if (!res.ok) throw new Error("Failed to load retailers");
+  const data = (await res.json()) as { retailers: RetailerAdapterStatus[] };
+  return data.retailers;
+}
+
+export async function lookupStoreAvailability(data: {
+  productId: number | null;
+  normalizedIdentifier: string | null;
+  identifierType: string | null;
+  retailers: string[];
+  location: { postalCode?: string | null; city?: string | null; region?: string | null; radiusMiles?: number | null };
+}): Promise<StoreLookupResult> {
+  const res = await fetch("/api/retailers/store-lookup", {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(err?.error ?? "Store lookup failed");
+  }
+  return res.json() as Promise<StoreLookupResult>;
+}
+
+// ── Retail intelligence: platform pricing / fee engine ─────────────────────
+export type PlatformPricingStatus = { key: string; label: string; configured: boolean; requiredEnv: string[]; status: string };
+
+export type PriceBand = { low: number | null; median: number | null; high: number | null; sampleCount: number | null };
+
+export type PlatformPriceResult = {
+  platform: string;
+  configured: boolean;
+  matchConfidence: string;
+  condition: string;
+  active: PriceBand;
+  sold: PriceBand;
+  observedAt: string | null;
+  sourceStatus: string;
+};
+
+export type FeeCalculation = {
+  currency: string;
+  grossSellingPrice: number;
+  platformFees: number;
+  paymentFees: number;
+  promotionalFees: number;
+  shippingState: "KNOWN" | "UNKNOWN";
+  shippingCost: number | null;
+  costBasis: number | null;
+  netProceedsBeforeShipping: number;
+  netProceeds: number | null;
+  estimatedProfit: number | null;
+  marginPercent: number | null;
+  profitState: string;
+};
+
+export async function fetchPlatformPricingStatus(): Promise<PlatformPricingStatus[]> {
+  const res = await fetch("/api/pricing/platforms", { credentials: "same-origin" });
+  if (!res.ok) throw new Error("Failed to load platforms");
+  const data = (await res.json()) as { platforms: PlatformPricingStatus[] };
+  return data.platforms;
+}
+
+export async function fetchMarketPricing(data: {
+  productId: number | null;
+  normalizedIdentifier: string | null;
+  identifierType: string | null;
+  platforms: string[];
+  condition: string;
+}): Promise<{ results: PlatformPriceResult[] }> {
+  const res = await fetch("/api/pricing/market", {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Market pricing failed");
+  return res.json() as Promise<{ results: PlatformPriceResult[] }>;
+}
+
+export async function calculateFees(data: {
+  listPrice: number;
+  platform?: string | null;
+  feeSchedule: { percentageFee: number; fixedFee: number; paymentProcessingPercent: number; paymentProcessingFixed: number; promotionalPercent?: number };
+  shipping: { mode: "SELLER_ENTERED" | "SAVED_PROFILE" | "PLATFORM_CALCULATED" | "UNKNOWN"; amount: number | null };
+  costBasis: number | null;
+}): Promise<{ calculation: FeeCalculation }> {
+  const res = await fetch("/api/pricing/calculate", {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Fee calculation failed");
+  return res.json() as Promise<{ calculation: FeeCalculation }>;
+}
+
+// ── OAuth account connections ──────────────────────────────────────────────
+export type OAuthProviderStatus = {
+  key: string;
+  label: string;
+  supportsOAuth: boolean;
+  supportsPkce: boolean;
+  supportsRefresh: boolean;
+  status: "READY" | "NOT_CONFIGURED" | "UNSUPPORTED";
+  requiredEnv: string[];
+  monitoringOnly: boolean;
+  publishAuthorized: boolean;
+};
+
+export async function fetchOAuthProviders(): Promise<OAuthProviderStatus[]> {
+  const res = await fetch("/api/oauth/providers", { credentials: "same-origin" });
+  if (!res.ok) throw new Error("Failed to load OAuth providers");
+  const data = (await res.json()) as { providers: OAuthProviderStatus[] };
+  return data.providers;
+}
+
+export async function startOAuth(provider: string): Promise<{ status: string; requiredEnv?: string[]; reason?: string; authorizationUrl?: string }> {
+  const res = await fetch(`/api/oauth/${provider}/start`, {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify({}),
+  });
+  // 409 NOT_CONFIGURED / UNSUPPORTED is an expected, honest state — return it.
+  const data = (await res.json().catch(() => null)) as { status?: string; requiredEnv?: string[]; reason?: string; authorizationUrl?: string } | null;
+  return {
+    status: data?.status ?? (res.ok ? "READY" : "FAILED"),
+    requiredEnv: data?.requiredEnv,
+    reason: data?.reason,
+    authorizationUrl: data?.authorizationUrl,
+  };
+}
+
 export async function fetchRevenueDashboard(): Promise<RevenueDashboard> {
   const res = await fetch("/api/admin/revenue", { headers: adminHeaders(), credentials: "same-origin" });
   if (!res.ok) throw new Error("Failed to load revenue dashboard");
