@@ -209,6 +209,12 @@ describe("Review Queue identity recovery (NOT_FOUND/AMBIGUOUS -> corrected -> ev
       expect(listing.canonicalListingPackageId).toBeTruthy();
       expect(Array.isArray(listing.channelDrafts)).toBe(true);
       expect(listing.channelDrafts.length).toBeGreaterThan(0);
+      // The $45 recommendedListPrice asserted above (from real evidence,
+      // step 8) must survive into the listing itself -- see
+      // sourcing-listing-price.test.ts for the full regression coverage of
+      // this; this is just proof it also holds for a manually-corrected
+      // identity, not only an automatically-matched one.
+      expect(Number(listing.canonicalListingPackage.target_price)).toBe(45);
     });
   });
 

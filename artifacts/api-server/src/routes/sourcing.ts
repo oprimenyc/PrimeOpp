@@ -651,6 +651,15 @@ router.post("/sourcing/sessions/:id/items/:itemId/create-listing", requirePermis
       ? req.body.selectedChannels
       : [item.target_platform ?? "manual"];
 
+    // The decision engine (computeSourcingDecision, via the same withDecision
+    // helper the Review Queue uses) is the one source of truth for pricing --
+    // never recalculated here. recommendedListPrice is already derived from
+    // real supported market evidence (see sourcingDecision.ts / feeEngine.ts);
+    // this just carries that number into the listing instead of discarding it.
+    // Still null when there's no supported evidence yet, exactly as before --
+    // no fabricated price is ever introduced.
+    const { decision } = await withDecision(item);
+
     const generated = generateListingWorkspace({
       source: "SCAN",
       identifier: item.normalized_identifier ?? item.raw_query,
@@ -662,7 +671,7 @@ router.post("/sourcing/sessions/:id/items/:itemId/create-listing", requirePermis
         category: item.category,
         condition: item.condition,
         costBasis: toNumber(item.acquisition_cost),
-        targetPrice: null,
+        targetPrice: decision.recommendedListPrice,
       },
       selectedChannels,
       createExports: true,
