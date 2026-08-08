@@ -77,6 +77,7 @@ function AdminOrdersPage() {
           <span className="text-white font-black text-sm tracking-widest uppercase">PRIMEOPP ADMIN</span>
           <nav className="hidden md:flex items-center gap-4">
             <a href="/admin" className="text-xs text-zinc-500 tracking-widest uppercase hover:text-white transition-colors">Products</a>
+            <a href="/admin/sourcing" className="text-xs text-zinc-500 tracking-widest uppercase hover:text-white transition-colors">Sourcing</a>
             <a href="/admin/dashboard" className="text-xs text-zinc-500 tracking-widest uppercase hover:text-white transition-colors">Dashboard</a>
             <span className="text-xs text-white tracking-widest uppercase border-b border-red-600 pb-0.5">Orders</span>
           </nav>

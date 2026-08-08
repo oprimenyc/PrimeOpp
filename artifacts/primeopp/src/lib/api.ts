@@ -949,3 +949,123 @@ export async function moderateReview(id: string, status: "pending" | "approved" 
   });
   if (!res.ok) throw new Error("Failed to moderate review");
 }
+
+// ─── Sourcing sessions + review queue ──────────────────────────────────────
+
+export type SourcingItemStatus =
+  | "SCANNED" | "IDENTIFYING" | "QUEUED" | "REVIEWING"
+  | "BUY" | "PASS" | "WATCH"
+  | "PURCHASED" | "LISTED" | "SOLD" | "ARCHIVED";
+
+export interface SourcingSession {
+  id: number;
+  admin_user_id: number | null;
+  label: string;
+  location_name: string | null;
+  status: "ACTIVE" | "CLOSED";
+  notes: string | null;
+  started_at: string;
+  ended_at: string | null;
+  created_at: string;
+  updated_at: string;
+  item_counts?: Record<string, number>;
+  itemCounts?: Record<string, number>;
+}
+
+export interface SourcingDecision {
+  decision: "BUY" | "WATCH" | "PASS" | "INSUFFICIENT_DATA";
+  reason: string;
+  recommendedListPrice: number | null;
+  listPriceBasis: string;
+  estimatedProfit: number | null;
+  roiPercent: number | null;
+  evidenceConfidence: "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+  evidenceSampleCount: number | null;
+}
+
+export interface SourcingSessionItem {
+  id: number;
+  sessionId: number;
+  rawQuery: string;
+  intakeSource: "BARCODE" | "MANUAL_IDENTIFIER" | "SEARCH";
+  identifierType: string | null;
+  normalizedIdentifier: string | null;
+  lookupStatus: string;
+  lookupSource: string;
+  matchedProductId: number | null;
+  title: string | null;
+  description: string | null;
+  category: string | null;
+  imageUrl: string | null;
+  condition: string | null;
+  acquisitionCost: number | null;
+  shippingEstimate: number | null;
+  currency: string;
+  targetPlatform: string | null;
+  status: SourcingItemStatus;
+  notes: string | null;
+  duplicateOfItemId: number | null;
+  canonicalListingPackageId: number | null;
+  createdAt: string;
+  updatedAt: string;
+  decision: SourcingDecision;
+  classification?: { type: string; confidence: string; reason: string };
+  valid?: boolean;
+}
+
+async function sourcingRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api/sourcing${path}`, {
+    credentials: "same-origin",
+    ...init,
+    headers: { ...adminHeaders(), ...(init?.headers ?? {}) },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(err?.error ?? `Sourcing request failed (${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function fetchSourcingSessions(status?: "ACTIVE" | "CLOSED"): Promise<SourcingSession[]> {
+  const query = status ? `?status=${status}` : "";
+  return sourcingRequest<SourcingSession[]>(`/sessions${query}`);
+}
+
+export async function createSourcingSession(data: { label: string; locationName?: string | null; notes?: string | null }): Promise<SourcingSession> {
+  return sourcingRequest<SourcingSession>("/sessions", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function fetchSourcingSession(id: number): Promise<SourcingSession> {
+  return sourcingRequest<SourcingSession>(`/sessions/${id}`);
+}
+
+export async function updateSourcingSession(id: number, data: { label?: string; locationName?: string | null; notes?: string | null; status?: "ACTIVE" | "CLOSED" }): Promise<SourcingSession> {
+  return sourcingRequest<SourcingSession>(`/sessions/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export async function fetchSourcingItems(sessionId: number, statuses?: SourcingItemStatus[]): Promise<SourcingSessionItem[]> {
+  const query = statuses && statuses.length > 0 ? `?status=${statuses.join(",")}` : "";
+  return sourcingRequest<SourcingSessionItem[]>(`/sessions/${sessionId}/items${query}`);
+}
+
+export async function addSourcingItem(sessionId: number, data: { query: string; source: "BARCODE" | "MANUAL_IDENTIFIER" | "SEARCH"; acquisitionCost?: number | null }): Promise<SourcingSessionItem> {
+  return sourcingRequest<SourcingSessionItem>(`/sessions/${sessionId}/items`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateSourcingItem(sessionId: number, itemId: number, data: {
+  acquisitionCost?: number | null;
+  shippingEstimate?: number | null;
+  targetPlatform?: string | null;
+  status?: SourcingItemStatus;
+  notes?: string | null;
+}): Promise<SourcingSessionItem> {
+  return sourcingRequest<SourcingSessionItem>(`/sessions/${sessionId}/items/${itemId}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export async function batchUpdateSourcingItems(sessionId: number, itemIds: number[], action: "PASS" | "WATCH" | "ARCHIVE" | "QUEUE"): Promise<{ updatedCount: number; items: SourcingSessionItem[] }> {
+  return sourcingRequest(`/sessions/${sessionId}/items/batch`, { method: "POST", body: JSON.stringify({ itemIds, action }) });
+}
+
+export async function createListingFromSourcingItem(sessionId: number, itemId: number, selectedChannels?: string[]): Promise<{ canonicalListingPackageId: number }> {
+  return sourcingRequest(`/sessions/${sessionId}/items/${itemId}/create-listing`, { method: "POST", body: JSON.stringify({ selectedChannels }) });
+}

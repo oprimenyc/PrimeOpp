@@ -9,6 +9,7 @@ import AdminDashboardPage from "@/pages/admin-dashboard";
 import AdminLogin from "@/pages/admin-login";
 import AdminOrdersPage from "@/pages/admin-orders";
 import ListingWorkspacePage from "@/pages/listing-workspace";
+import SourcingPage from "@/pages/sourcing";
 import ProductPage from "@/pages/product";
 import CartPage from "@/pages/cart";
 import OrderSuccessPage from "@/pages/order-success";
@@ -62,6 +63,8 @@ function Router() {
         <Route path="/admin/dashboard" component={AdminDashboardPage} />
         <Route path="/admin/orders" component={AdminOrdersPage} />
         <Route path="/admin/listings" component={ListingWorkspacePage} />
+        <Route path="/admin/sourcing/:id" component={SourcingPage} />
+        <Route path="/admin/sourcing" component={SourcingPage} />
         <Route path="/admin" component={AdminPage} />
         <Route component={NotFound} />
       </Switch>

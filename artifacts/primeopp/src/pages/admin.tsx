@@ -226,6 +226,7 @@ function AdminPage() {
         </div>
         <div className="flex gap-3">
           <a href="/admin/dashboard" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">DASHBOARD</a>
+          <a href="/admin/sourcing" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">SOURCING</a>
           <a href="/admin/listings" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">LISTINGS</a>
           <a href="/admin/orders" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">📦 ORDERS</a>
           <a href="/" className="text-[10px] font-bold tracking-widest border border-zinc-700 px-3 py-2 hover:bg-white hover:text-black transition-colors">← STORE</a>

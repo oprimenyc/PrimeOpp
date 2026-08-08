@@ -232,6 +232,44 @@ export const channelConnectionSchema = z.object({
   scopesRequested: z.array(z.string().trim().min(1).max(120)).max(30).optional(),
 });
 
+export const sourcingSessionCreateSchema = z.object({
+  label: z.string().trim().min(1).max(120),
+  locationName: z.string().trim().max(160).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+});
+
+export const sourcingSessionUpdateSchema = z.object({
+  label: z.string().trim().min(1).max(120).optional(),
+  locationName: z.string().trim().max(160).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+  status: z.enum(["ACTIVE", "CLOSED"]).optional(),
+});
+
+export const sourcingItemCreateSchema = z.object({
+  query: z.string().trim().min(1).max(200),
+  source: z.enum(["BARCODE", "MANUAL_IDENTIFIER", "SEARCH"]),
+  acquisitionCost: z.number().min(0).max(1_000_000).nullable().optional(),
+});
+
+export const SOURCING_ITEM_STATUS_VALUES = [
+  "SCANNED", "IDENTIFYING", "QUEUED", "REVIEWING",
+  "BUY", "PASS", "WATCH",
+  "PURCHASED", "LISTED", "SOLD", "ARCHIVED",
+] as const;
+
+export const sourcingItemUpdateSchema = z.object({
+  acquisitionCost: z.number().min(0).max(1_000_000).nullable().optional(),
+  shippingEstimate: z.number().min(0).max(100_000).nullable().optional(),
+  targetPlatform: z.string().trim().max(60).nullable().optional(),
+  status: z.enum(SOURCING_ITEM_STATUS_VALUES).optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+});
+
+export const sourcingItemBatchSchema = z.object({
+  itemIds: z.array(z.number().int().positive()).min(1).max(200),
+  action: z.enum(["PASS", "WATCH", "ARCHIVE", "QUEUE"]),
+});
+
 export function validateBody<T extends z.ZodTypeAny>(schema: T) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const parsed = schema.safeParse(req.body);

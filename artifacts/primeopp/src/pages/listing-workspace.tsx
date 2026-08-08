@@ -531,6 +531,7 @@ function ListingWorkspacePage() {
         </div>
         <div className="flex gap-3">
           <a href="/admin" className="border border-zinc-700 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-white hover:text-black">Products</a>
+          <a href="/admin/sourcing" className="border border-zinc-700 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-white hover:text-black">Sourcing</a>
           <a href="/admin/orders" className="border border-zinc-700 px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-white hover:text-black">Orders</a>
         </div>
       </div>

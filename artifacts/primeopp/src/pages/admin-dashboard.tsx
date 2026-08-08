@@ -71,6 +71,8 @@ function AdminDashboardPage() {
           </div>
           <nav className="flex gap-4 text-xs uppercase tracking-widest">
             <a href="/admin" className="text-zinc-400 hover:text-white">Products</a>
+            <a href="/admin/sourcing" className="text-zinc-400 hover:text-white">Sourcing</a>
+            <a href="/admin/listings" className="text-zinc-400 hover:text-white">Listings</a>
             <a href="/admin/orders" className="text-zinc-400 hover:text-white">Orders</a>
           </nav>
         </div>
