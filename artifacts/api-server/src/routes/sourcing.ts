@@ -57,6 +57,7 @@ type ItemRow = {
   lookup_status: string;
   lookup_source: string;
   matched_product_id: number | null;
+  identity_confidence: "HIGH" | "MEDIUM" | "LOW" | "AMBIGUOUS" | "MANUAL" | null;
   title: string | null;
   description: string | null;
   category: string | null;
@@ -241,6 +242,7 @@ async function withDecision(item: ItemRow) {
     lookupStatus: item.lookup_status,
     lookupSource: item.lookup_source,
     matchedProductId: item.matched_product_id,
+    identityConfidence: item.identity_confidence,
     title: item.title,
     description: item.description,
     category: item.category,
@@ -461,9 +463,9 @@ router.post("/sourcing/sessions/:id/items", requirePermission("products:write"),
     const rows = await query<ItemRow>(
       `INSERT INTO sourcing_session_items
         (session_id, raw_query, intake_source, identifier_type, normalized_identifier,
-         lookup_status, lookup_source, matched_product_id, title, description, category, image_url,
+         lookup_status, lookup_source, matched_product_id, identity_confidence, title, description, category, image_url,
          acquisition_cost, currency, status, duplicate_of_item_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'USD',$14,$15)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'USD',$15,$16)
        RETURNING *`,
       [
         sessionId,
@@ -474,6 +476,11 @@ router.post("/sourcing/sessions/:id/items", requirePermission("products:write"),
         resolved.lookupStatus,
         resolved.lookupSource,
         matchedProductId,
+        // The same classification/match confidence classifyProductIntake()
+        // already computes -- previously returned once in this response and
+        // then discarded. Persisted so the Review Queue can keep showing it,
+        // not just the item's first render.
+        resolved.confidence,
         resolved.productCandidate.title ?? null,
         resolved.productCandidate.description ?? null,
         resolved.productCandidate.category ?? null,
@@ -527,6 +534,21 @@ router.patch("/sourcing/sessions/:id/items/:itemId", requirePermission("products
   }
 
   try {
+    // Identity correction: providing matchedProductId means an operator just
+    // verified/linked this item to a real catalog product (via the same
+    // POST /product-identifiers mapping Listing Workspace already uses --
+    // the caller is expected to have saved that mapping first). This is the
+    // one field that also drives lookup_status/lookup_source/
+    // identity_confidence, so those are never independently settable and
+    // can't drift out of sync with what actually happened.
+    if (req.body.matchedProductId !== undefined) {
+      const productRows = await query<{ id: number }>("SELECT id FROM products WHERE id=$1", [req.body.matchedProductId]);
+      if (!productRows[0]) {
+        res.status(400).json({ error: "product_not_found" });
+        return;
+      }
+    }
+
     const fields: string[] = [];
     const values: unknown[] = [];
     let index = 1;
@@ -536,6 +558,19 @@ router.patch("/sourcing/sessions/:id/items/:itemId", requirePermission("products
     if (req.body.targetPlatform !== undefined) { fields.push(`target_platform=$${index++}`); values.push(req.body.targetPlatform); }
     if (req.body.status !== undefined) { fields.push(`status=$${index++}`); values.push(req.body.status); }
     if (req.body.notes !== undefined) { fields.push(`notes=$${index++}`); values.push(req.body.notes); }
+    if (req.body.title !== undefined) { fields.push(`title=$${index++}`); values.push(req.body.title); }
+    if (req.body.description !== undefined) { fields.push(`description=$${index++}`); values.push(req.body.description); }
+    if (req.body.category !== undefined) { fields.push(`category=$${index++}`); values.push(req.body.category); }
+    if (req.body.matchedProductId !== undefined) {
+      fields.push(`matched_product_id=$${index++}`);
+      values.push(req.body.matchedProductId);
+      fields.push(`lookup_status=$${index++}`);
+      values.push("FOUND");
+      fields.push(`lookup_source=$${index++}`);
+      values.push("MANUAL_CORRECTION");
+      fields.push(`identity_confidence=$${index++}`);
+      values.push("MANUAL");
+    }
 
     if (fields.length === 0) {
       res.status(400).json({ error: "no_fields_to_update" });

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { Camera, Loader2, Plus, RefreshCw, Upload, X } from "lucide-react";
 import { BulkEvidenceImportPanel } from "@/components/sourcing/BulkEvidenceImportPanel";
+import { IdentityCorrectionPanel } from "@/components/sourcing/IdentityCorrectionPanel";
 import {
   addSourcingItem,
   batchUpdateSourcingItems,
@@ -64,6 +65,35 @@ function statusBadgeClass(status: string): string {
 
 function money(value: number | null): string {
   return value === null ? "--" : `$${value.toFixed(2)}`;
+}
+
+// Identity provenance badge: distinguishes an automatic match PrimeOpp
+// found itself (colored by how confident that automatic classification/
+// match actually was) from one a human personally verified via the
+// identity-correction flow ("MANUAL" -- a distinct, higher-trust state,
+// never blended with the classifier's own HIGH/MEDIUM/LOW/AMBIGUOUS scale).
+function identityBadge(item: SourcingSessionItem): { label: string; className: string } {
+  if (item.lookupSource === "MANUAL_CORRECTION") {
+    return { label: "MANUAL", className: "border-sky-700 text-sky-300 bg-sky-950/40" };
+  }
+  if (item.lookupStatus === "FOUND") {
+    const confidence = item.identityConfidence ?? "MATCHED";
+    const className = confidence === "HIGH"
+      ? "border-emerald-700 text-emerald-300 bg-emerald-950/40"
+      : confidence === "MEDIUM"
+        ? "border-amber-700 text-amber-300 bg-amber-950/40"
+        : "border-zinc-700 text-zinc-400";
+    return { label: confidence === "MATCHED" ? "MATCHED" : `${confidence} CONFIDENCE`, className };
+  }
+  if (item.identityConfidence === "AMBIGUOUS") {
+    return { label: "AMBIGUOUS", className: "border-amber-700 text-amber-300 bg-amber-950/40" };
+  }
+  // No catalog match yet (NOT_FOUND: a real identifier that just isn't in
+  // PrimeOpp's catalog) or the local classifier couldn't even confirm the
+  // format (NOT_WIRED). Either way: unresolved, not an error -- most items
+  // scanned somewhere new will land here until corrected or matched later.
+  const confidenceNote = item.identityConfidence ? ` (${item.identityConfidence})` : "";
+  return { label: `UNRESOLVED${confidenceNote}`, className: "border-zinc-700 text-zinc-500" };
 }
 
 function SourcingPage() {
@@ -389,6 +419,7 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
                   onUpdate={(data) => void handleItemUpdate(item.id, data)}
                   onCreateListing={() => void handleCreateListing(item.id)}
                   onAddEvidence={(observation) => void handleAddEvidence(item, observation)}
+                  onIdentityUpdate={(updated) => { upsertItem(updated); setMessage(`Identity corrected: ${updated.title}.`); }}
                 />
               ))}
             </div>
@@ -563,7 +594,7 @@ function SourceScanner({ sessionId, onItemAdded }: { sessionId: number; onItemAd
 
 // ── Review queue row ─────────────────────────────────────────────────────
 
-function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, onCreateListing, onAddEvidence }: {
+function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, onCreateListing, onAddEvidence, onIdentityUpdate }: {
   item: SourcingSessionItem;
   platforms: PlatformPricingStatus[];
   selected: boolean;
@@ -571,13 +602,16 @@ function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, o
   onUpdate: (data: { acquisitionCost?: number | null; shippingEstimate?: number | null; targetPlatform?: string | null; status?: SourcingItemStatus }) => void;
   onCreateListing: () => void;
   onAddEvidence: (observation: ManualPriceObservationInput) => void;
+  onIdentityUpdate: (updated: SourcingSessionItem) => void;
 }) {
   const [cost, setCost] = useState(item.acquisitionCost !== null ? String(item.acquisitionCost) : "");
   const [shipping, setShipping] = useState(item.shippingEstimate !== null ? String(item.shippingEstimate) : "");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [identityOpen, setIdentityOpen] = useState(false);
   const [evPlatform, setEvPlatform] = useState(item.targetPlatform ?? platforms[0]?.key ?? "ebay");
   const [evListingType, setEvListingType] = useState<"ACTIVE" | "SOLD">("SOLD");
   const [evPrice, setEvPrice] = useState("");
+  const badge = identityBadge(item);
 
   function commitCost() {
     const parsed = cost.trim() ? Number(cost) : null;
@@ -592,12 +626,18 @@ function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, o
     <div className={`border ${selected ? "border-red-700" : "border-zinc-900"} bg-zinc-950 p-3 flex flex-wrap items-center gap-3`}>
       <input type="checkbox" checked={selected} onChange={onToggleSelect} className="w-4 h-4 accent-red-600" />
 
-      <div className="min-w-[160px] flex-1">
-        <p className="font-bold uppercase text-sm truncate">{item.title ?? item.rawQuery}</p>
+      <div className="min-w-[180px] flex-1">
+        <p className="font-bold uppercase text-sm truncate">{item.title ?? "Identity unresolved"}</p>
         <p className="text-zinc-500 text-[11px] normal-case">
-          {item.identifierType ?? item.intakeSource} &middot; {item.lookupStatus === "FOUND" ? "matched in catalog" : "no catalog match"}
+          {item.identifierType ?? item.intakeSource}: {item.normalizedIdentifier ?? item.rawQuery}
           {item.duplicateOfItemId && <span className="text-amber-400"> &middot; duplicate of #{item.duplicateOfItemId}</span>}
         </p>
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className={`border text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 ${badge.className}`}>{badge.label}</span>
+          <button onClick={() => setIdentityOpen((open) => !open)} className="text-zinc-500 hover:text-white text-[9px] uppercase tracking-widest underline">
+            {identityOpen ? "close" : item.lookupStatus === "FOUND" ? "edit identity" : "correct identity"}
+          </button>
+        </div>
       </div>
 
       <div className="w-24">
@@ -691,6 +731,14 @@ function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, o
             Save Evidence
           </button>
         </div>
+      )}
+
+      {identityOpen && (
+        <IdentityCorrectionPanel
+          item={item}
+          onCancel={() => setIdentityOpen(false)}
+          onSaved={(updated) => { onIdentityUpdate(updated); setIdentityOpen(false); }}
+        />
       )}
     </div>
   );

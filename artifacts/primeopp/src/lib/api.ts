@@ -1051,6 +1051,13 @@ export interface SourcingSessionItem {
   lookupStatus: string;
   lookupSource: string;
   matchedProductId: number | null;
+  // The classification/match confidence classifyProductIntake() computed at
+  // intake time, persisted (migration 0015) rather than discarded after the
+  // create response. "MANUAL" means an operator personally verified/
+  // corrected this identity via the identifier-mapping flow, not that the
+  // classifier guessed it -- a distinct, higher-trust provenance, never a
+  // fabricated confidence level.
+  identityConfidence: "HIGH" | "MEDIUM" | "LOW" | "AMBIGUOUS" | "MANUAL" | null;
   title: string | null;
   description: string | null;
   category: string | null;
@@ -1117,6 +1124,15 @@ export async function updateSourcingItem(sessionId: number, itemId: number, data
   targetPlatform?: string | null;
   status?: SourcingItemStatus;
   notes?: string | null;
+  // Identity correction -- see routes/sourcing.ts: setting matchedProductId
+  // here always also marks the item FOUND/MANUAL_CORRECTION/MANUAL. Reuses
+  // the same identifier-mapping architecture as Listing Workspace; save the
+  // mapping with saveProductIdentifierMapping() BEFORE calling this so the
+  // barcode resolves automatically on future scans too, not just this item.
+  matchedProductId?: number;
+  title?: string;
+  description?: string | null;
+  category?: string | null;
 }): Promise<SourcingSessionItem> {
   return sourcingRequest<SourcingSessionItem>(`/sessions/${sessionId}/items/${itemId}`, { method: "PATCH", body: JSON.stringify(data) });
 }

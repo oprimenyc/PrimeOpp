@@ -163,6 +163,19 @@ describe("normalized market evidence migration", () => {
   });
 });
 
+describe("sourcing identity confidence migration", () => {
+  const migration = readFileSync(path.join(repoRoot, "lib/db/migrations/0015_sourcing_identity_confidence.sql"), "utf8");
+
+  it("is additive only -- adds one nullable column and a constraint on it, drops nothing", () => {
+    expect(migration).not.toMatch(/\bDROP TABLE\b|\bDELETE FROM\b|\bDROP COLUMN\b/i);
+    expect(migration).toContain("ADD COLUMN IF NOT EXISTS identity_confidence TEXT");
+  });
+
+  it("allows the classifier's real confidence levels plus a distinct human-verified MANUAL state, and nothing else", () => {
+    expect(migration).toMatch(/CHECK \(identity_confidence IS NULL OR identity_confidence IN \('HIGH', 'MEDIUM', 'LOW', 'AMBIGUOUS', 'MANUAL'\)\)/);
+  });
+});
+
 describe("sourcing routes safety posture", () => {
   it("makes no Stripe or external provider calls", () => {
     const source = readFileSync(path.join(repoRoot, "artifacts/api-server/src/routes/sourcing.ts"), "utf8");

@@ -289,6 +289,16 @@ export const sourcingItemUpdateSchema = z.object({
   targetPlatform: z.string().trim().max(60).nullable().optional(),
   status: z.enum(SOURCING_ITEM_STATUS_VALUES).optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
+  // Identity correction -- reuses the same identifier-mapping architecture
+  // as Listing Workspace (POST /product-identifiers), not a second identity
+  // system. Providing matchedProductId here always means "an operator just
+  // verified/linked this item to that real catalog product" -- the route
+  // sets lookup_status/lookup_source/identity_confidence accordingly rather
+  // than trusting the caller to pass consistent provenance fields.
+  matchedProductId: z.number().int().positive().optional(),
+  title: z.string().trim().min(1).max(200).optional(),
+  description: z.string().max(5000).nullable().optional(),
+  category: z.string().max(120).nullable().optional(),
 });
 
 export const sourcingItemBatchSchema = z.object({
