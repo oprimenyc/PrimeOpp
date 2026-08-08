@@ -86,6 +86,27 @@ type PlatformPriceRow = {
   sold_comp_count: number | null;
 };
 
+type EvidenceSummaryRow = {
+  platform: string;
+  listing_type: "ACTIVE" | "SOLD";
+  active_median: string | null;
+  sold_median: string | null;
+  match_confidence: "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+  source_type: string;
+  source_url: string | null;
+  observed_at: string;
+};
+
+export type EvidenceSummaryEntry = {
+  platform: string;
+  listingType: "ACTIVE" | "SOLD";
+  price: number | null;
+  matchConfidence: "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+  sourceType: string;
+  sourceUrl: string | null;
+  observedAt: string;
+};
+
 type FeeScheduleRow = {
   percentage_fee: string | null;
   fixed_fee: string | null;
@@ -100,21 +121,30 @@ function toNumber(value: string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+// Evidence is looked up by the operator's own catalog match (matched_product_id)
+// OR by the scanned item's normalized identifier -- whichever is present.
+// Most real sourcing items (something scanned at Ross that was never in
+// PrimeOpp's own product catalog) will only ever have a normalized
+// identifier, never a matched_product_id. Requiring product_id here would
+// make evidence lookup permanently unreachable for exactly the scenario
+// Sourcing exists for -- see migration 0014.
 async function loadPricingEvidence(
   productId: number | null,
+  normalizedIdentifier: string | null,
   platform: string | null,
 ): Promise<{ evidence: PricingEvidence; confidence: "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN"; sampleCount: number | null }> {
   const empty = { evidence: { soldMedian: null, activeLow: null, activeMedian: null, activeHigh: null }, confidence: "UNKNOWN" as const, sampleCount: null };
-  if (productId === null || !platform) return empty;
+  if (!platform || (productId === null && !normalizedIdentifier)) return empty;
 
   const rows = await query<PlatformPriceRow>(
     `SELECT active_low, active_median, active_high, sold_low, sold_median, sold_high,
             match_confidence, active_listing_count, sold_comp_count
      FROM platform_price_observations
-     WHERE product_id = $1 AND platform = $2 AND source_status = 'FOUND'
+     WHERE platform = $3 AND source_status = 'FOUND'
+       AND ((product_id IS NOT NULL AND product_id = $1) OR (normalized_identifier IS NOT NULL AND normalized_identifier = $2))
      ORDER BY observed_at DESC
      LIMIT 1`,
-    [productId, platform],
+    [productId, normalizedIdentifier, platform],
   );
   const row = rows[0];
   if (!row) return empty;
@@ -129,6 +159,36 @@ async function loadPricingEvidence(
     confidence: row.match_confidence,
     sampleCount: (row.sold_comp_count ?? 0) + (row.active_listing_count ?? 0) || null,
   };
+}
+
+// The concise cross-platform summary for the review queue ("eBay $42 sold,
+// StockX $61 active...") -- independent of which single platform is
+// selected as target_platform for the decision's fee math. Latest FOUND
+// observation per platform, across every platform, for this item's
+// identity. Never aggregates/averages across platforms -- each stays
+// attributed to its own source.
+async function loadEvidenceSummary(productId: number | null, normalizedIdentifier: string | null): Promise<EvidenceSummaryEntry[]> {
+  if (productId === null && !normalizedIdentifier) return [];
+
+  const rows = await query<EvidenceSummaryRow>(
+    `SELECT DISTINCT ON (platform) platform, listing_type, active_median, sold_median,
+            match_confidence, source_type, source_url, observed_at
+     FROM platform_price_observations
+     WHERE source_status = 'FOUND'
+       AND ((product_id IS NOT NULL AND product_id = $1) OR (normalized_identifier IS NOT NULL AND normalized_identifier = $2))
+     ORDER BY platform, observed_at DESC`,
+    [productId, normalizedIdentifier],
+  );
+
+  return rows.map((row) => ({
+    platform: row.platform,
+    listingType: row.listing_type,
+    price: toNumber(row.listing_type === "SOLD" ? row.sold_median : row.active_median),
+    matchConfidence: row.match_confidence,
+    sourceType: row.source_type,
+    sourceUrl: row.source_url,
+    observedAt: row.observed_at,
+  }));
 }
 
 async function loadFeeSchedule(platform: string | null): Promise<FeeSchedule> {
@@ -156,9 +216,10 @@ async function loadFeeSchedule(platform: string | null): Promise<FeeSchedule> {
 }
 
 async function withDecision(item: ItemRow) {
-  const [{ evidence, confidence, sampleCount }, feeSchedule] = await Promise.all([
-    loadPricingEvidence(item.matched_product_id, item.target_platform),
+  const [{ evidence, confidence, sampleCount }, feeSchedule, evidenceSummary] = await Promise.all([
+    loadPricingEvidence(item.matched_product_id, item.normalized_identifier, item.target_platform),
     loadFeeSchedule(item.target_platform),
+    loadEvidenceSummary(item.matched_product_id, item.normalized_identifier),
   ]);
 
   const decision = computeSourcingDecision({
@@ -196,6 +257,7 @@ async function withDecision(item: ItemRow) {
     createdAt: item.created_at,
     updatedAt: item.updated_at,
     decision,
+    evidenceSummary,
   };
 }
 

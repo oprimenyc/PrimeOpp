@@ -221,6 +221,32 @@ export const feeCalculationSchema = z.object({
   currency: z.string().trim().length(3).optional(),
 });
 
+// BYOD / manual evidence entry: the operator directly types in a real price
+// they observed (checked eBay themselves, read it off a Keepa/Helium10
+// export, etc.). Exactly one data point per submission -- never a
+// fabricated low/high range from a single number. Must be scoped to a
+// product the operator owns OR a normalized identifier from something they
+// scanned; the route enforces the DB's own CHECK constraint either way.
+export const manualPriceObservationSchema = z.object({
+  productId: z.number().int().positive().nullable().optional(),
+  normalizedIdentifier: z.string().trim().max(120).nullable().optional(),
+  identifierType: z.string().trim().max(40).nullable().optional(),
+  platform: platformKeySchema,
+  listingType: z.enum(["ACTIVE", "SOLD"]),
+  price: z.number().positive().max(1_000_000),
+  condition: z.enum(["NEW", "USED", "REFURBISHED", "OPEN_BOX", "UNKNOWN"]).default("UNKNOWN"),
+  matchConfidence: z.enum(["HIGH", "MEDIUM", "LOW", "UNKNOWN"]).default("MEDIUM"),
+  sourceUrl: z.string().trim().url().max(500).nullable().optional(),
+  currency: z.string().trim().length(3).default("USD"),
+}).refine(
+  (value) => value.productId != null || Boolean(value.normalizedIdentifier),
+  { message: "Provide productId, normalizedIdentifier, or both -- evidence must be scoped to something." },
+);
+
+export const manualPriceObservationBatchSchema = z.object({
+  observations: z.array(manualPriceObservationSchema).min(1).max(50),
+});
+
 export const oauthStartSchema = z.object({
   displayName: z.string().trim().max(120).nullable().optional(),
   scopes: z.array(z.string().trim().min(1).max(120)).max(30).optional(),

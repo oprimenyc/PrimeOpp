@@ -145,6 +145,24 @@ describe("sourcing sessions migration", () => {
   });
 });
 
+describe("normalized market evidence migration", () => {
+  const migration = readFileSync(path.join(repoRoot, "lib/db/migrations/0014_normalized_market_evidence.sql"), "utf8");
+
+  it("is additive only -- loosens a constraint and adds columns, drops nothing", () => {
+    expect(migration).not.toMatch(/\bDROP TABLE\b|\bDELETE FROM\b|\bDROP COLUMN\b/i);
+    expect(migration).toContain("ALTER TABLE platform_price_observations ALTER COLUMN product_id DROP NOT NULL");
+  });
+
+  it("lets evidence be scoped to an arbitrary scanned identifier, not only the operator's own catalog", () => {
+    expect(migration).toContain("ADD COLUMN IF NOT EXISTS normalized_identifier TEXT");
+    expect(migration).toContain("ADD COLUMN IF NOT EXISTS identifier_type TEXT");
+  });
+
+  it("still requires every row to be scoped to something real", () => {
+    expect(migration).toMatch(/CHECK \(product_id IS NOT NULL OR normalized_identifier IS NOT NULL\)/);
+  });
+});
+
 describe("sourcing routes safety posture", () => {
   it("makes no Stripe or external provider calls", () => {
     const source = readFileSync(path.join(repoRoot, "artifacts/api-server/src/routes/sourcing.ts"), "utf8");

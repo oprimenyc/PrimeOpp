@@ -23,10 +23,12 @@ import {
   fetchSourcingItems,
   fetchSourcingSession,
   fetchSourcingSessions,
+  submitManualPriceObservations,
   updateSourcingItem,
   updateSourcingSession,
   verifyToken,
   SOURCING_LISTING_HANDOFF_KEY,
+  type ManualPriceObservationInput,
   type PlatformPricingStatus,
   type SourcingItemStatus,
   type SourcingListingHandoff,
@@ -287,6 +289,21 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
     setSession(updated);
   }
 
+  async function handleAddEvidence(item: SourcingSessionItem, observation: ManualPriceObservationInput) {
+    try {
+      await submitManualPriceObservations([{
+        ...observation,
+        productId: item.matchedProductId,
+        normalizedIdentifier: item.normalizedIdentifier,
+        identifierType: item.identifierType,
+      }]);
+      setMessage(`Recorded ${observation.platform} ${observation.listingType.toLowerCase()} evidence: ${money(observation.price)}.`);
+      void load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Failed to record evidence");
+    }
+  }
+
   if (loading) {
     return <main className="min-h-screen bg-black text-white px-6 py-8"><p className="text-zinc-600 text-sm normal-case">Loading session...</p></main>;
   }
@@ -358,6 +375,7 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
                   })}
                   onUpdate={(data) => void handleItemUpdate(item.id, data)}
                   onCreateListing={() => void handleCreateListing(item.id)}
+                  onAddEvidence={(observation) => void handleAddEvidence(item, observation)}
                 />
               ))}
             </div>
@@ -532,16 +550,21 @@ function SourceScanner({ sessionId, onItemAdded }: { sessionId: number; onItemAd
 
 // ── Review queue row ─────────────────────────────────────────────────────
 
-function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, onCreateListing }: {
+function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, onCreateListing, onAddEvidence }: {
   item: SourcingSessionItem;
   platforms: PlatformPricingStatus[];
   selected: boolean;
   onToggleSelect: () => void;
   onUpdate: (data: { acquisitionCost?: number | null; shippingEstimate?: number | null; targetPlatform?: string | null; status?: SourcingItemStatus }) => void;
   onCreateListing: () => void;
+  onAddEvidence: (observation: ManualPriceObservationInput) => void;
 }) {
   const [cost, setCost] = useState(item.acquisitionCost !== null ? String(item.acquisitionCost) : "");
   const [shipping, setShipping] = useState(item.shippingEstimate !== null ? String(item.shippingEstimate) : "");
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [evPlatform, setEvPlatform] = useState(item.targetPlatform ?? platforms[0]?.key ?? "ebay");
+  const [evListingType, setEvListingType] = useState<"ACTIVE" | "SOLD">("SOLD");
+  const [evPrice, setEvPrice] = useState("");
 
   function commitCost() {
     const parsed = cost.trim() ? Number(cost) : null;
@@ -585,16 +608,25 @@ function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, o
             <option key={platform.key} value={platform.key}>{platform.label}</option>
           ))}
         </select>
-        {item.matchedProductId === null && (
-          <p className="text-zinc-600 text-[9px] normal-case mt-0.5">No catalog match -- evidence lookup needs one.</p>
+        {item.matchedProductId === null && !item.normalizedIdentifier && (
+          <p className="text-zinc-600 text-[9px] normal-case mt-0.5">No resolved identity -- evidence lookup needs one.</p>
         )}
       </div>
 
-      <div className="w-40">
+      <div className="w-44">
         <span className={`inline-block border text-[9px] font-black uppercase tracking-widest px-2 py-1 mb-1 ${decisionBadgeClass(item.decision.decision)}`}>{item.decision.decision}</span>
         <p className="text-zinc-500 text-[10px] normal-case">
           {item.decision.estimatedProfit !== null ? `${money(item.decision.estimatedProfit)} profit` : item.decision.reason}
         </p>
+        {/* Concise cross-platform summary -- the decision first, the evidence
+            behind it second. Each source stays attributed to itself; nothing
+            here is averaged or blended across platforms. */}
+        {item.evidenceSummary.length > 0 && (
+          <p className="text-zinc-500 text-[10px] normal-case mt-0.5">
+            {item.evidenceSummary.slice(0, 2).map((entry) => `${entry.platform} ${money(entry.price)}`).join(" · ")}
+            {item.evidenceSummary.length > 2 && ` +${item.evidenceSummary.length - 2} more`}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-1">
@@ -605,7 +637,48 @@ function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, o
         {item.status === "BUY" && !item.canonicalListingPackageId && (
           <button onClick={onCreateListing} className="bg-red-600 text-white text-[9px] font-black uppercase px-2 py-1">List It</button>
         )}
+        <button onClick={() => setEvidenceOpen((open) => !open)} className="border border-zinc-700 text-zinc-400 text-[9px] font-black uppercase px-2 py-1">
+          {evidenceOpen ? "Close" : "+ Evidence"}
+        </button>
       </div>
+
+      {evidenceOpen && (
+        <div className="w-full border-t border-zinc-800 pt-2 mt-1 flex flex-wrap items-end gap-2">
+          <p className="text-zinc-600 text-[10px] normal-case w-full">
+            Enter a real price you observed yourself (checked a marketplace, or read it off a Helium10/Keepa/SellerAmp export) -- one data point, never a fabricated range.
+          </p>
+          <div className="w-28">
+            <label className="text-[9px] text-zinc-600 uppercase block">Platform</label>
+            <select value={evPlatform} onChange={(event) => setEvPlatform(event.target.value)} className="w-full bg-black border border-zinc-800 px-2 py-1 text-xs">
+              {platforms.map((platform) => (
+                <option key={platform.key} value={platform.key}>{platform.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-24">
+            <label className="text-[9px] text-zinc-600 uppercase block">Type</label>
+            <select value={evListingType} onChange={(event) => setEvListingType(event.target.value as "ACTIVE" | "SOLD")} className="w-full bg-black border border-zinc-800 px-2 py-1 text-xs">
+              <option value="SOLD">Sold comp</option>
+              <option value="ACTIVE">Active ask</option>
+            </select>
+          </div>
+          <div className="w-24">
+            <label className="text-[9px] text-zinc-600 uppercase block">Price</label>
+            <input value={evPrice} onChange={(event) => setEvPrice(event.target.value)} type="number" min="0" step="0.01" placeholder="59.99" className="w-full bg-black border border-zinc-800 px-2 py-1 text-xs" />
+          </div>
+          <button
+            disabled={!evPrice.trim() || !Number.isFinite(Number(evPrice))}
+            onClick={() => {
+              onAddEvidence({ platform: evPlatform, listingType: evListingType, price: Number(evPrice) });
+              setEvPrice("");
+              setEvidenceOpen(false);
+            }}
+            className="bg-red-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-white text-[9px] font-black uppercase px-3 py-1.5"
+          >
+            Save Evidence
+          </button>
+        </div>
+      )}
     </div>
   );
 }

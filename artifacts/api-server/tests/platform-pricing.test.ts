@@ -17,6 +17,24 @@ describe("selected-platform price intelligence", () => {
     }
   });
 
+  it("covers the resale/reseller marketplaces named in the product spec, all honestly unconfigured", () => {
+    const keys = PLATFORM_PRICING_ADAPTERS.map((a) => a.key);
+    for (const key of ["stockx", "goat", "alias", "flight-club", "stadium-goods", "depop", "grailed", "walmart", "offerup", "whatnot"]) {
+      expect(keys).toContain(key);
+      expect(getPricingAdapter(key)!.isConfigured()).toBe(false);
+    }
+  });
+
+  it("never reports FOUND for any adapter without real credentials configured", () => {
+    // Regression guard for the actual moat: PrimeOpp must remain agnostic
+    // about *where* evidence came from, but it must never claim to have
+    // found evidence it didn't. Every shell adapter, regardless of platform,
+    // must report NOT_CONFIGURED/PROVIDER_REQUIRED here -- never FOUND.
+    for (const adapter of PLATFORM_PRICING_ADAPTERS) {
+      expect(["NOT_CONFIGURED", "PROVIDER_REQUIRED"]).toContain(platformPricingStatus(adapter).status);
+    }
+  });
+
   it("reports NOT_CONFIGURED with required env names when unconfigured", () => {
     const status = platformPricingStatus(getPricingAdapter("ebay")!);
     expect(status.status).toBe("NOT_CONFIGURED");
@@ -51,6 +69,17 @@ describe("selected-platform price intelligence", () => {
       condition: "NEW",
     });
     expect(newResult.condition).toBe("NEW");
+  });
+
+  it("manual/BYOD evidence entry never synthesizes a low/high range from one number", () => {
+    const source = readFileSync(path.join(repoRoot, "artifacts/api-server/src/routes/pricing.ts"), "utf8");
+    // The insert must set exactly one of active_median/sold_median per
+    // observation (whichever listing type was submitted) and must never
+    // populate active_low/active_high/sold_low/sold_high -- those would be
+    // a fabricated range invented from a single self-reported price.
+    expect(source).toContain("active_median, sold_median");
+    expect(source).not.toMatch(/active_low|active_high|sold_low|sold_high/);
+    expect(source).toContain("'MANUAL_ENTRY'");
   });
 
   it("adds an additive platform price table separating active and sold columns", () => {

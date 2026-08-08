@@ -879,6 +879,36 @@ export async function fetchMarketPricing(data: {
   return res.json() as Promise<{ results: PlatformPriceResult[] }>;
 }
 
+export type ManualPriceObservationInput = {
+  productId?: number | null;
+  normalizedIdentifier?: string | null;
+  identifierType?: string | null;
+  platform: string;
+  listingType: "ACTIVE" | "SOLD";
+  price: number;
+  condition?: "NEW" | "USED" | "REFURBISHED" | "OPEN_BOX" | "UNKNOWN";
+  matchConfidence?: "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+  sourceUrl?: string | null;
+};
+
+// BYOD: the operator directly enters a real price they observed themselves
+// (checked a marketplace, read it off a Helium10/Keepa/SellerAmp export)
+// rather than PrimeOpp calling any provider. This is currently the only
+// writer into platform_price_observations anywhere in the app.
+export async function submitManualPriceObservations(observations: ManualPriceObservationInput[]): Promise<{ observations: Record<string, unknown>[] }> {
+  const res = await fetch("/api/pricing/observations/manual", {
+    method: "POST",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify({ observations }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(err?.error ?? "Failed to record manual price observation");
+  }
+  return res.json() as Promise<{ observations: Record<string, unknown>[] }>;
+}
+
 export async function calculateFees(data: {
   listPrice: number;
   platform?: string | null;
@@ -994,6 +1024,22 @@ export interface SourcingDecision {
   evidenceSampleCount: number | null;
 }
 
+// One real observation for one platform -- see lib/listingPackagePersistence
+// note in sourcing.ts for why this exists: platform_price_observations is
+// now keyed by normalized_identifier as well as product_id, and this is the
+// concise per-item summary across whichever platforms have real evidence,
+// independent of which single platform is selected as the decision's
+// fee/sell-through venue (targetPlatform).
+export interface EvidenceSummaryEntry {
+  platform: string;
+  listingType: "ACTIVE" | "SOLD";
+  price: number | null;
+  matchConfidence: "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+  sourceType: string;
+  sourceUrl: string | null;
+  observedAt: string;
+}
+
 export interface SourcingSessionItem {
   id: number;
   sessionId: number;
@@ -1020,6 +1066,7 @@ export interface SourcingSessionItem {
   createdAt: string;
   updatedAt: string;
   decision: SourcingDecision;
+  evidenceSummary: EvidenceSummaryEntry[];
   classification?: { type: string; confidence: string; reason: string };
   valid?: boolean;
 }

@@ -106,6 +106,22 @@ export const PLATFORM_PRICING_ADAPTERS: PlatformPricingAdapter[] = [
   new NotConfiguredPricingAdapter("poshmark", "Poshmark", ["POSHMARK_API_KEY"]),
   new NotConfiguredPricingAdapter("facebook-marketplace", "Facebook Marketplace", ["FACEBOOK_COMMERCE_TOKEN"]),
   new NotConfiguredPricingAdapter("etsy", "Etsy", ["ETSY_API_KEY"]),
+  // Resale/reseller-specific marketplaces named in the product spec. None of
+  // these have a live adapter today (same honest NOT_CONFIGURED shell as the
+  // ones above) -- listing them here means the sourcing Review Queue's
+  // platform picker and the manual/BYOD evidence-entry endpoint can already
+  // reference them by a stable key, and each one plugs in a real adapter
+  // later by only changing this file.
+  new NotConfiguredPricingAdapter("stockx", "StockX", ["STOCKX_API_KEY"]),
+  new NotConfiguredPricingAdapter("goat", "GOAT", ["GOAT_API_KEY"]),
+  new NotConfiguredPricingAdapter("alias", "Alias", ["ALIAS_API_KEY"]),
+  new NotConfiguredPricingAdapter("flight-club", "Flight Club", ["FLIGHT_CLUB_API_KEY"]),
+  new NotConfiguredPricingAdapter("stadium-goods", "Stadium Goods", ["STADIUM_GOODS_API_KEY"]),
+  new NotConfiguredPricingAdapter("depop", "Depop", ["DEPOP_API_KEY"]),
+  new NotConfiguredPricingAdapter("grailed", "Grailed", ["GRAILED_API_KEY"]),
+  new NotConfiguredPricingAdapter("walmart", "Walmart", ["WALMART_MARKETPLACE_API_KEY"]),
+  new NotConfiguredPricingAdapter("offerup", "OfferUp", ["OFFERUP_API_KEY"]),
+  new NotConfiguredPricingAdapter("whatnot", "Whatnot", ["WHATNOT_API_KEY"]),
 ];
 
 export function getPricingAdapter(key: string): PlatformPricingAdapter | undefined {
