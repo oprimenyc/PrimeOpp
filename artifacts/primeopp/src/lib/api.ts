@@ -689,6 +689,26 @@ export async function createListingPackage(data: ListingPackageRequest): Promise
   return res.json() as Promise<ListingPackageResponse>;
 }
 
+// Updates an EXISTING canonical listing package in place (same generation
+// logic as createListingPackage -- just persisted as an UPDATE instead of an
+// INSERT). Used once Listing Workspace already has a package open (from a
+// Sourcing BUY -> LIST handoff, or from a prior save in this same session)
+// so that editing fields and saving again never creates a second,
+// disconnected package -- see pages/listing-workspace.tsx's handlePackageSubmit.
+export async function updateListingPackage(id: string | number, data: ListingPackageRequest): Promise<ListingPackageResponse> {
+  const res = await fetch(`/api/listings/packages/${id}`, {
+    method: "PUT",
+    headers: adminHeaders(),
+    credentials: "same-origin",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(err?.error ?? "Failed to update listing package");
+  }
+  return res.json() as Promise<ListingPackageResponse>;
+}
+
 export async function classifyProductIntake(data: ProductIntakeRequest): Promise<ProductIntakeResponse> {
   const res = await fetch("/api/products/intake", {
     method: "POST",

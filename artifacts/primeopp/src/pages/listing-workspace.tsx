@@ -6,6 +6,7 @@ import {
   classifyProductIntake,
   createChannelConnection,
   createListingPackage,
+  updateListingPackage,
   fetchChannelConnections,
   fetchChannels,
   fetchMarketPricing,
@@ -406,9 +407,17 @@ function ListingWorkspacePage() {
       return;
     }
 
+    // EDIT vs CREATE: if a canonical package is already open -- either
+    // handed off from Sourcing's BUY -> LIST action, or from an earlier save
+    // in this same session -- saving again must update THAT package, never
+    // create a second one. runIntake() (a new scan/search/manual identifier)
+    // already clears `result`, so starting a genuinely new listing still
+    // takes the create path exactly as before.
+    const existingPackageId = result?.canonicalListingPackageId;
+
     setSaving(true);
     try {
-      const response = await createListingPackage({
+      const payload = {
         source: listingSourceFor(source),
         identifier,
         identifierType: intakeResult?.identifierType ?? null,
@@ -426,11 +435,16 @@ function ListingWorkspacePage() {
         },
         selectedChannels,
         createExports: true,
-      });
+      };
+      const response = existingPackageId !== undefined
+        ? await updateListingPackage(existingPackageId, payload)
+        : await createListingPackage(payload);
       setResult(response);
-      flash("Listing package created. External publish remains disabled.");
+      flash(existingPackageId !== undefined
+        ? "Listing package updated. External publish remains disabled."
+        : "Listing package created. External publish remains disabled.");
     } catch (err: unknown) {
-      flash(err instanceof Error ? err.message : "Listing package could not be created.");
+      flash(err instanceof Error ? err.message : "Listing package could not be saved.");
     } finally {
       setSaving(false);
     }
@@ -743,7 +757,9 @@ function ListingWorkspacePage() {
               </div>
               <input value={form.shippingProfile} onChange={(event) => setForm({ ...form, shippingProfile: event.target.value })} className="mt-4 w-full border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-red-600" placeholder="Shipping profile" />
               <button type="submit" disabled={saving} className="mt-5 w-full bg-red-600 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white hover:text-black disabled:opacity-50">
-                {saving ? "Creating..." : "Create Listing Package"}
+                {result?.canonicalListingPackageId !== undefined
+                  ? (saving ? "Updating..." : "Update Listing Package")
+                  : (saving ? "Creating..." : "Create Listing Package")}
               </button>
             </form>
           </section>
