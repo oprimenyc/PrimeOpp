@@ -18,6 +18,7 @@ type ProductPriceRow = {
   id: number;
   price: string | number | null;
   colors: Array<{ name: string; hex: string; price: number }> | null;
+  is_published: boolean;
 };
 
 type OrderRow = {
@@ -68,7 +69,11 @@ function buildShippingAddress(session: StripeSessionWithShipping): ShippingAddre
   };
 }
 
-async function validateAndPriceItems(items: OrderItem[]): Promise<OrderItem[]> {
+// Exported for direct integration testing of the is_published gate without
+// needing a configured Stripe key (the checkout route fails closed with 503
+// before ever reaching this function when Stripe isn't configured -- see
+// tests/stripe-fail-closed.test.ts). No behavior change, just testability.
+export async function validateAndPriceItems(items: OrderItem[]): Promise<OrderItem[]> {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("No items provided");
   }
@@ -87,7 +92,7 @@ async function validateAndPriceItems(items: OrderItem[]): Promise<OrderItem[]> {
 
   const productIds = [...new Set(items.map((item) => item.product_id))];
   const dbRows = await query<ProductPriceRow>(
-    "SELECT id, price, colors FROM products WHERE id = ANY($1::int[])",
+    "SELECT id, price, colors, is_published FROM products WHERE id = ANY($1::int[])",
     [productIds],
   );
 
@@ -95,6 +100,16 @@ async function validateAndPriceItems(items: OrderItem[]): Promise<OrderItem[]> {
     const foundIds = new Set(dbRows.map((row) => row.id));
     const missing = productIds.filter((id) => !foundIds.has(id));
     throw new Error(`Product(s) not found: ${missing.join(", ")}`);
+  }
+
+  // Defense in depth: even if a product row exists, it must be a real,
+  // publishable storefront listing to be checked out. An identity-only
+  // record created by the Sourcing identity-correction flow (see
+  // routes/products.ts's isPublishableProduct) must never reach payment,
+  // regardless of how its product_id ended up in a cart payload.
+  const unpublished = dbRows.filter((row) => !row.is_published);
+  if (unpublished.length > 0) {
+    throw new Error(`Product(s) not available: ${unpublished.map((row) => row.id).join(", ")}`);
   }
 
   const priceMap = new Map(

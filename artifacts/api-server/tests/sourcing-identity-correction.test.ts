@@ -127,6 +127,14 @@ describe("Review Queue identity recovery (NOT_FOUND/AMBIGUOUS -> corrected -> ev
       });
       expect(createProductRes.status).toBe(201);
       const product = await createProductRes.json();
+      // This product exists purely as an identity anchor for the sourcing
+      // item -- it has no price/external_link, so it must NOT be a live
+      // storefront listing (see products-publishable.test.ts for the full
+      // regression coverage of that invariant). Evidence/decision/BUY->LIST
+      // below all still work from an unpublished product, proving the
+      // identity-record and publishable-storefront-product concepts are
+      // genuinely decoupled.
+      expect(product.is_published).toBe(false);
 
       const mappingRes = await authedFetch(`${baseUrl}/api/product-identifiers`, {
         method: "POST",
