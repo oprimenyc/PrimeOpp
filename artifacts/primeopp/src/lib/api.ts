@@ -889,6 +889,7 @@ export type ManualPriceObservationInput = {
   condition?: "NEW" | "USED" | "REFURBISHED" | "OPEN_BOX" | "UNKNOWN";
   matchConfidence?: "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
   sourceUrl?: string | null;
+  currency?: string;
 };
 
 // BYOD: the operator directly enters a real price they observed themselves

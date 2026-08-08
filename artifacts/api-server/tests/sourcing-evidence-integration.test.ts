@@ -157,7 +157,7 @@ describe("golden path: scan -> identify -> real evidence -> decision -> BUY -> L
     });
   });
 
-  it("keeps evidence from different platforms separate -- never averaged or cross-contaminated", async () => {
+  it("keeps evidence from different platforms separate -- never averaged or cross-contaminated -- and resolves a CSV-shaped multi-identifier batch in one call", async () => {
     await withAuthedServer(async ({ baseUrl, authedFetch }) => {
       // No hyphens/dots/whitespace: classifyProductIntake strips those
       // before normalizing, so a hyphenated literal would not round-trip
@@ -171,18 +171,41 @@ describe("golden path: scan -> identify -> real evidence -> decision -> BUY -> L
       });
       const item = await itemRes.json();
 
-      await authedFetch(`${baseUrl}/api/pricing/observations/manual`, {
+      // Two more items for two more identifiers, sharing this same session --
+      // this is the actual CSV bulk-import shape: a spreadsheet covers many
+      // different scanned items, not just one, and BulkEvidenceImportPanel
+      // submits every parsed+validated row for the whole sheet in a single
+      // POST /pricing/observations/manual call (chunked to <=50 per call).
+      const idB = `${runId}CSVROWB`;
+      const idC = `${runId}CSVROWC`;
+      const itemB = await (await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items`, {
+        method: "POST",
+        body: JSON.stringify({ query: idB, source: "MANUAL_IDENTIFIER" }),
+      })).json();
+      const itemC = await (await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items`, {
+        method: "POST",
+        body: JSON.stringify({ query: idC, source: "MANUAL_IDENTIFIER" }),
+      })).json();
+
+      const importRes = await authedFetch(`${baseUrl}/api/pricing/observations/manual`, {
         method: "POST",
         body: JSON.stringify({
           observations: [
             { normalizedIdentifier: identifier, platform: "ebay", listingType: "SOLD", price: 59.99, matchConfidence: "MEDIUM" },
             { normalizedIdentifier: identifier, platform: "stockx", listingType: "ACTIVE", price: 75, matchConfidence: "HIGH" },
+            { normalizedIdentifier: idB, platform: "mercari", listingType: "ACTIVE", price: 55, matchConfidence: "MEDIUM", currency: "USD" },
+            { normalizedIdentifier: idC, platform: "stockx", listingType: "SOLD", price: 200, matchConfidence: "LOW", currency: "USD" },
           ],
         }),
       });
+      expect(importRes.status).toBe(201);
+      expect((await importRes.json()).observations).toHaveLength(4);
 
       const itemsRes = await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items`);
-      const resolved = (await itemsRes.json()).find((row: { id: number }) => row.id === item.id);
+      const allItems = await itemsRes.json();
+      const resolved = allItems.find((row: { id: number }) => row.id === item.id);
+      const resolvedB = allItems.find((row: { id: number }) => row.id === itemB.id);
+      const resolvedC = allItems.find((row: { id: number }) => row.id === itemC.id);
 
       // Concise cross-platform summary keeps both sources distinct.
       expect(resolved.evidenceSummary).toEqual(
@@ -192,6 +215,12 @@ describe("golden path: scan -> identify -> real evidence -> decision -> BUY -> L
         ]),
       );
       expect(resolved.evidenceSummary).toHaveLength(2);
+
+      // Rows for other identifiers in the SAME batch call resolve only to
+      // their own item -- proving the bulk call didn't blend rows across
+      // identifiers.
+      expect(resolvedB.evidenceSummary).toEqual([expect.objectContaining({ platform: "mercari", listingType: "ACTIVE", price: 55 })]);
+      expect(resolvedC.evidenceSummary).toEqual([expect.objectContaining({ platform: "stockx", listingType: "SOLD", price: 200 })]);
 
       // The decision itself only uses whichever platform is selected as the
       // sell-through venue (fees differ per venue) -- it must not blend
@@ -207,6 +236,14 @@ describe("golden path: scan -> identify -> real evidence -> decision -> BUY -> L
         body: JSON.stringify({ targetPlatform: "stockx" }),
       })).json();
       expect(targetStockx.decision.recommendedListPrice).toBe(75);
+
+      // The 3rd row's own item independently reaches BUY off its own row.
+      const withCostC = await (await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${itemC.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ acquisitionCost: 40, shippingEstimate: 10, targetPlatform: "stockx" }),
+      })).json();
+      expect(withCostC.decision.recommendedListPrice).toBe(200);
+      expect(withCostC.decision.decision).toBe("BUY");
     });
   });
 

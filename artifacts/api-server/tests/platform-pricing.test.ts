@@ -6,6 +6,7 @@ import {
   PLATFORM_PRICING_ADAPTERS,
   platformPricingStatus,
 } from "../src/lib/platformPricing.js";
+import { manualPriceObservationBatchSchema } from "../src/lib/validation.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..");
 
@@ -80,6 +81,13 @@ describe("selected-platform price intelligence", () => {
     expect(source).toContain("active_median, sold_median");
     expect(source).not.toMatch(/active_low|active_high|sold_low|sold_high/);
     expect(source).toContain("'MANUAL_ENTRY'");
+  });
+
+  it("caps a manual/bulk-import observation batch at 50 and requires at least 1 -- the CSV import UI chunks to this exact bound", () => {
+    const oneObservation = { platform: "ebay", listingType: "SOLD" as const, price: 10, normalizedIdentifier: "X" };
+    expect(() => manualPriceObservationBatchSchema.parse({ observations: [] })).toThrow();
+    expect(() => manualPriceObservationBatchSchema.parse({ observations: Array.from({ length: 50 }, () => oneObservation) })).not.toThrow();
+    expect(() => manualPriceObservationBatchSchema.parse({ observations: Array.from({ length: 51 }, () => oneObservation) })).toThrow();
   });
 
   it("adds an additive platform price table separating active and sold columns", () => {

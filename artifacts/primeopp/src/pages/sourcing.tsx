@@ -13,7 +13,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { Camera, Loader2, Plus, RefreshCw, X } from "lucide-react";
+import { Camera, Loader2, Plus, RefreshCw, Upload, X } from "lucide-react";
+import { BulkEvidenceImportPanel } from "@/components/sourcing/BulkEvidenceImportPanel";
 import {
   addSourcingItem,
   batchUpdateSourcingItems,
@@ -201,6 +202,7 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showImport, setShowImport] = useState(false);
 
   const load = useCallback(async () => {
     const valid = await verifyToken();
@@ -346,10 +348,21 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
                 <FilterChip active={!!statusFilter && statusFilter.every((s) => QUEUE_STATUSES.includes(s)) && statusFilter.length > 1} onClick={() => setStatusFilter(["SCANNED", "QUEUED", "REVIEWING", "IDENTIFYING"])}>To Review ({(counts.SCANNED ?? 0) + (counts.QUEUED ?? 0) + (counts.REVIEWING ?? 0) + (counts.IDENTIFYING ?? 0)})</FilterChip>
                 <FilterChip active={!!statusFilter?.includes("PASS")} onClick={() => setStatusFilter(["PASS"])}>Pass ({counts.PASS ?? 0})</FilterChip>
               </div>
-              <button onClick={() => void load()} className="text-zinc-500 hover:text-white text-[10px] uppercase tracking-widest flex items-center gap-1">
-                <RefreshCw className="w-3 h-3" /> Refresh
-              </button>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setShowImport((open) => !open)} className="text-zinc-500 hover:text-white text-[10px] uppercase tracking-widest flex items-center gap-1">
+                  <Upload className="w-3 h-3" /> {showImport ? "Hide Import" : "Import Evidence (CSV)"}
+                </button>
+                <button onClick={() => void load()} className="text-zinc-500 hover:text-white text-[10px] uppercase tracking-widest flex items-center gap-1">
+                  <RefreshCw className="w-3 h-3" /> Refresh
+                </button>
+              </div>
             </div>
+
+            {showImport && (
+              <div className="mb-3">
+                <BulkEvidenceImportPanel onImported={() => void load()} />
+              </div>
+            )}
 
             {selected.size > 0 && (
               <div className="flex items-center gap-2 mb-3 border border-zinc-800 bg-zinc-950 px-3 py-2">
