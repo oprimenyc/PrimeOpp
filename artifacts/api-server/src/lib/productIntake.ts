@@ -265,7 +265,6 @@ export function classifyProductIntake(query: string, source: ProductIntakeSource
   }
 
   const analyzed = analyzeIdentifierByContract(trimmed);
-  const normalized = analyzed.normalizedValue || trimmed;
   let identifierType = mapIdentifierType(analyzed.identifierType);
   let confidence = analyzed.confidence;
 
@@ -276,6 +275,22 @@ export function classifyProductIntake(query: string, source: ProductIntakeSource
     identifierType = "STYLE_CODE";
     confidence = confidence === "LOW" ? "MEDIUM" : confidence;
   }
+
+  // Every exact-match identifier stored/compared elsewhere in the app --
+  // product_identifiers mappings (routes/product-intake.ts's
+  // POST /product-identifiers), platform_price_observations evidence, and
+  // this item's own normalized_identifier column -- must go through the
+  // SAME normalization or they silently stop matching each other. Before
+  // this, classifyProductIntake() only stripped whitespace/dashes/periods
+  // (analyzed.normalizedValue) while normalizeProductIdentifier() also
+  // uppercases -- so any alphanumeric identifier (a SKU or style code, not
+  // a barcode) with lowercase letters would classify/store one way here but
+  // never match a mapping or evidence row saved via the other path. Skip it
+  // for PRODUCT_NAME, which is a free-text search string matched via
+  // case-insensitive LIKE (findLocalCatalogProduct), not exact identifier
+  // equality.
+  const rawNormalized = analyzed.normalizedValue || trimmed;
+  const normalized = identifierType === "PRODUCT_NAME" ? rawNormalized : normalizeProductIdentifier(rawNormalized);
 
   const valid = identifierType === "PRODUCT_NAME" || identifierType === "STYLE_CODE" || analyzed.isValidFormat;
   const reason = reasonFor(source, trimmed, identifierType, analyzed.ambiguityNote);

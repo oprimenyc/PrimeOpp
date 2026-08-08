@@ -141,6 +141,15 @@ describe("golden path: scan -> identify -> real evidence -> decision -> BUY -> L
         expect.objectContaining({ platform: "ebay", listingType: "SOLD", price: 59.99, sourceType: "MANUAL_ENTRY" }),
       ]);
 
+      // The decision engine's recommendation is BUY, but create-listing now
+      // requires the operator to have actually marked the item BUY (the
+      // same manual PATCH the "Buy" button sends) -- the server no longer
+      // trusts the frontend's button visibility alone.
+      await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "BUY" }),
+      });
+
       // 6. BUY -> LIST: reuses the existing Listing Workspace pipeline, not
       //    a duplicate one, and now persists channelDrafts/exports too
       //    (the previous session's fix).

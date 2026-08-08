@@ -3,6 +3,7 @@ import { requirePermission } from "../lib/auth.js";
 import { createAuditLog } from "../lib/audit.js";
 import { query } from "../lib/db.js";
 import { calculateFees, recommendListPrice, type PricingStrategy } from "../lib/feeEngine.js";
+import { normalizeProductIdentifier } from "../lib/productIntake.js";
 import {
   getPricingAdapter,
   PLATFORM_PRICING_ADAPTERS,
@@ -126,6 +127,18 @@ router.post("/pricing/observations/manual", requirePermission("products:write"),
       sourceUrl: string | null | undefined;
       currency: string;
     }>) {
+      // Sourcing items (classifyProductIntake) and saved product-identifier
+      // mappings (POST /product-identifiers) both run every exact-match
+      // identifier through normalizeProductIdentifier() -- strip whitespace/
+      // dashes/periods, then uppercase. Evidence has to go through the exact
+      // same normalization, or a value pasted from a spreadsheet (the CSV
+      // bulk-import path) in a different case/formatting than what a scan
+      // produced will insert "successfully" here and then never be found by
+      // loadPricingEvidence's exact match against sourcing_session_items.
+      // normalized_identifier -- silently discarding real evidence with no
+      // error to the operator.
+      const normalizedIdentifier = obs.normalizedIdentifier ? normalizeProductIdentifier(obs.normalizedIdentifier) : null;
+
       const rows = await query<Record<string, unknown>>(
         `INSERT INTO platform_price_observations
           (product_id, normalized_identifier, identifier_type, platform, condition, listing_type,
@@ -135,7 +148,7 @@ router.post("/pricing/observations/manual", requirePermission("products:write"),
          RETURNING *`,
         [
           obs.productId ?? null,
-          obs.normalizedIdentifier ?? null,
+          normalizedIdentifier,
           obs.identifierType ?? null,
           obs.platform,
           obs.condition,

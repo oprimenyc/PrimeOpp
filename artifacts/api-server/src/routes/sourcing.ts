@@ -647,6 +647,76 @@ router.post("/sourcing/sessions/:id/items/:itemId/create-listing", requirePermis
       return;
     }
 
+    // Idempotency: this route must be safe to invoke more than once for the
+    // same item -- a double-click, a browser retry after a timeout, or a
+    // retry after the response (but not the request) was lost are all
+    // real, normal-usage scenarios, not edge cases. Previously this always
+    // INSERTed a new canonical_listing_packages row and unconditionally
+    // repointed sourcing_session_items.canonical_listing_package_id at it,
+    // which orphaned the original package (and any channel drafts/exports
+    // already pulled from it) on every re-invocation. Once an item already
+    // references a package, return that SAME package -- never create a
+    // second one.
+    if (item.canonical_listing_package_id !== null) {
+      const existingPackageRows = await query<Record<string, unknown>>(
+        "SELECT * FROM canonical_listing_packages WHERE id=$1",
+        [item.canonical_listing_package_id],
+      );
+      const existingPackage = existingPackageRows[0];
+      if (!existingPackage) {
+        // The item's own reference points at a row that no longer exists --
+        // a data-integrity anomaly (nothing in this codebase deletes
+        // canonical_listing_packages). Fail explicitly rather than silently
+        // fabricating a replacement package for a reference that should
+        // never have gone missing.
+        console.error(
+          `sourcing_session_item ${itemId} references missing canonical_listing_package ${item.canonical_listing_package_id}`,
+        );
+        res.status(409).json({ error: "listing_reference_invalid", canonicalListingPackageId: item.canonical_listing_package_id });
+        return;
+      }
+
+      const [existingChannelDrafts, existingExports] = await Promise.all([
+        query<Record<string, unknown>>("SELECT * FROM channel_listing_drafts WHERE canonical_listing_id=$1 ORDER BY id", [item.canonical_listing_package_id]),
+        query<Record<string, unknown>>("SELECT * FROM listing_export_packages WHERE canonical_listing_id=$1 ORDER BY id", [item.canonical_listing_package_id]),
+      ]);
+
+      res.status(200).json({
+        canonicalListingPackageId: existingPackage.id,
+        canonicalListingPackage: existingPackage,
+        channelDrafts: existingChannelDrafts,
+        exports: existingExports,
+        externalPublishEnabled: false,
+        approvalRequired: true,
+        liabilityMode: "seller_publishes_on_own_accounts",
+        alreadyListed: true,
+      });
+      return;
+    }
+
+    // item.canonical_listing_package_id is null here. If the item's own
+    // status still says LISTED, that is a distinct data-integrity anomaly
+    // from "never bought" -- e.g. the package it referenced was removed and
+    // migration 0013's `ON DELETE SET NULL` cleared the reference. Same
+    // rule as above: fail explicitly, never silently create a replacement
+    // package for an item that was already listed.
+    if (item.status === "LISTED") {
+      console.error(`sourcing_session_item ${itemId} has status LISTED but no canonical_listing_package_id`);
+      res.status(409).json({ error: "listing_reference_invalid" });
+      return;
+    }
+
+    // The server is the final authority on whether this item may be listed
+    // for the first time -- the frontend only shows the "Create Listing"
+    // button for status === "BUY", but that is a UI convenience, not
+    // enforcement. Any other status (including a manual API call) is
+    // rejected explicitly rather than allowed to silently produce a listing
+    // for an item nobody decided to buy.
+    if (item.status !== "BUY") {
+      res.status(409).json({ error: "item_not_buy", status: item.status });
+      return;
+    }
+
     const selectedChannels = Array.isArray(req.body?.selectedChannels) && req.body.selectedChannels.length > 0
       ? req.body.selectedChannels
       : [item.target_platform ?? "manual"];

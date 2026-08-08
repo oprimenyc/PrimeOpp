@@ -197,6 +197,14 @@ describe("Review Queue identity recovery (NOT_FOUND/AMBIGUOUS -> corrected -> ev
       expect(resolved.decision.recommendedListPrice).toBe(45);
       expect(resolved.identityConfidence).toBe("MANUAL");
 
+      // create-listing now requires the item to actually be marked BUY
+      // (the same manual PATCH the "Buy" button sends) -- server-enforced,
+      // not just implied by the decision engine's recommendation.
+      await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "BUY" }),
+      });
+
       // 9. Existing Listing Workspace flow remains intact for a
       //    manually-corrected item: BUY -> LIST still persists a full
       //    package (channelDrafts/exports), not a truncated stand-in.

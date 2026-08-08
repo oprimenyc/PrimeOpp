@@ -116,6 +116,14 @@ describe("Sourcing BUY -> LIST carries the decision engine's recommendedListPric
       expect(resolved.decision.decision).toBe("BUY");
       expect(resolved.decision.recommendedListPrice).toBe(45);
 
+      // create-listing requires the item to actually be marked BUY (the
+      // same manual PATCH the "Buy" button sends) -- server-enforced, not
+      // just implied by the decision engine's recommendation.
+      await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "BUY" }),
+      });
+
       // 4. Operator invokes create-listing (the same request the "Create
       //    Listing" button in the Review Queue sends).
       const listingRes = await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${item.id}/create-listing`, {
@@ -184,6 +192,15 @@ describe("Sourcing BUY -> LIST carries the decision engine's recommendedListPric
         body: JSON.stringify({ query: identifier, source: "MANUAL_IDENTIFIER" }),
       });
       const item = await itemRes.json();
+
+      // The operator's manual BUY decision always takes precedence over the
+      // computed recommendation (see sourcingDecision.ts) -- they can still
+      // choose to list an item with no supported evidence; create-listing
+      // just requires that manual BUY to have actually been recorded.
+      await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "BUY" }),
+      });
 
       const listingRes = await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${item.id}/create-listing`, {
         method: "POST",

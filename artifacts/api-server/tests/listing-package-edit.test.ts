@@ -107,6 +107,14 @@ describe("Editing a listing package handed off from Sourcing updates it in place
         }),
       });
 
+      // create-listing requires the item to actually be marked BUY (the
+      // same manual PATCH the "Buy" button sends) -- server-enforced now,
+      // not just implied by the decision engine's recommendation.
+      await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "BUY" }),
+      });
+
       // 2. Create listing package from Sourcing (the handoff's origin point).
       const createListingRes = await authedFetch(`${baseUrl}/api/sourcing/sessions/${session.id}/items/${item.id}/create-listing`, {
         method: "POST",
