@@ -19,13 +19,17 @@ import {
   batchUpdateSourcingItems,
   createListingFromSourcingItem,
   createSourcingSession,
+  fetchPlatformPricingStatus,
   fetchSourcingItems,
   fetchSourcingSession,
   fetchSourcingSessions,
   updateSourcingItem,
   updateSourcingSession,
   verifyToken,
+  SOURCING_LISTING_HANDOFF_KEY,
+  type PlatformPricingStatus,
   type SourcingItemStatus,
+  type SourcingListingHandoff,
   type SourcingSession,
   type SourcingSessionItem,
 } from "@/lib/api";
@@ -190,6 +194,7 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
   const [, setLocation] = useLocation();
   const [session, setSession] = useState<SourcingSession | null>(null);
   const [items, setItems] = useState<SourcingSessionItem[]>([]);
+  const [platforms, setPlatforms] = useState<PlatformPricingStatus[]>([]);
   const [statusFilter, setStatusFilter] = useState<SourcingItemStatus[] | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [message, setMessage] = useState("");
@@ -202,12 +207,17 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
       return;
     }
     try {
-      const [sessionData, itemData] = await Promise.all([
+      const [sessionData, itemData, platformData] = await Promise.all([
         fetchSourcingSession(sessionId),
         fetchSourcingItems(sessionId),
+        // Non-fatal: the review queue works without a target platform set
+        // (it just can't look up evidence yet), so a failure here shouldn't
+        // block the session from loading.
+        fetchPlatformPricingStatus().catch(() => []),
       ]);
       setSession(sessionData);
       setItems(itemData);
+      setPlatforms(platformData);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed to load session");
     } finally {
@@ -258,9 +268,14 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
 
   async function handleCreateListing(itemId: number) {
     try {
-      await createListingFromSourcingItem(sessionId, itemId);
-      setMessage("Listing package created. Continue in Listings.");
-      void load();
+      const result = await createListingFromSourcingItem(sessionId, itemId);
+      const sourceItem = items.find((item) => item.id === itemId);
+      const handoff: SourcingListingHandoff = {
+        result,
+        sourceLabel: sourceItem?.title ?? sourceItem?.rawQuery ?? `sourcing item #${itemId}`,
+      };
+      sessionStorage.setItem(SOURCING_LISTING_HANDOFF_KEY, JSON.stringify(handoff));
+      setLocation("/admin/listings");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed to create listing");
     }
@@ -334,6 +349,7 @@ function SessionDetail({ sessionId }: { sessionId: number }) {
                 <ReviewQueueRow
                   key={item.id}
                   item={item}
+                  platforms={platforms}
                   selected={selected.has(item.id)}
                   onToggleSelect={() => setSelected((current) => {
                     const next = new Set(current);
@@ -516,11 +532,12 @@ function SourceScanner({ sessionId, onItemAdded }: { sessionId: number; onItemAd
 
 // ── Review queue row ─────────────────────────────────────────────────────
 
-function ReviewQueueRow({ item, selected, onToggleSelect, onUpdate, onCreateListing }: {
+function ReviewQueueRow({ item, platforms, selected, onToggleSelect, onUpdate, onCreateListing }: {
   item: SourcingSessionItem;
+  platforms: PlatformPricingStatus[];
   selected: boolean;
   onToggleSelect: () => void;
-  onUpdate: (data: { acquisitionCost?: number | null; shippingEstimate?: number | null; status?: SourcingItemStatus }) => void;
+  onUpdate: (data: { acquisitionCost?: number | null; shippingEstimate?: number | null; targetPlatform?: string | null; status?: SourcingItemStatus }) => void;
   onCreateListing: () => void;
 }) {
   const [cost, setCost] = useState(item.acquisitionCost !== null ? String(item.acquisitionCost) : "");
@@ -554,6 +571,23 @@ function ReviewQueueRow({ item, selected, onToggleSelect, onUpdate, onCreateList
       <div className="w-24">
         <label className="text-[9px] text-zinc-600 uppercase block">Shipping</label>
         <input value={shipping} onChange={(event) => setShipping(event.target.value)} onBlur={commitShipping} type="number" min="0" step="0.01" className="w-full bg-black border border-zinc-800 px-2 py-1 text-xs" />
+      </div>
+
+      <div className="w-32">
+        <label className="text-[9px] text-zinc-600 uppercase block">Platform</label>
+        <select
+          value={item.targetPlatform ?? ""}
+          onChange={(event) => onUpdate({ targetPlatform: event.target.value || null })}
+          className="w-full bg-black border border-zinc-800 px-2 py-1 text-xs"
+        >
+          <option value="">-- none --</option>
+          {platforms.map((platform) => (
+            <option key={platform.key} value={platform.key}>{platform.label}</option>
+          ))}
+        </select>
+        {item.matchedProductId === null && (
+          <p className="text-zinc-600 text-[9px] normal-case mt-0.5">No catalog match -- evidence lookup needs one.</p>
+        )}
       </div>
 
       <div className="w-40">

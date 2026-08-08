@@ -16,6 +16,7 @@ import {
   saveProductIdentifierMapping,
   startOAuth,
   verifyToken,
+  SOURCING_LISTING_HANDOFF_KEY,
   type ChannelConnection,
   type ChannelDefinition,
   type ChannelListingDraft,
@@ -27,6 +28,7 @@ import {
   type PlatformPricingStatus,
   type ProductIntakeResponse,
   type RetailerAdapterStatus,
+  type SourcingListingHandoff,
   type StoreLookupResult,
 } from "@/lib/api";
 
@@ -177,6 +179,41 @@ function ListingWorkspacePage() {
     }
     void load();
   }, [setLocation]);
+
+  // Pick up a listing package just created from a Sourcing "List It" action
+  // (see pages/sourcing.tsx). This is a one-shot session handoff, not a
+  // persisted-draft feature: it hydrates the exact same `result` this page
+  // would have produced from its own intake form, so BUY -> LIST opens
+  // straight on Draft Output instead of making the operator re-enter data
+  // the sourcing scan already collected.
+  useEffect(() => {
+    const raw = sessionStorage.getItem(SOURCING_LISTING_HANDOFF_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(SOURCING_LISTING_HANDOFF_KEY);
+    try {
+      const handoff: SourcingListingHandoff = JSON.parse(raw);
+      const pkg = handoff.result.canonicalListingPackage as Record<string, unknown>;
+      setForm((current) => ({
+        ...current,
+        identifier: String(pkg.source_identifier ?? current.identifier),
+        title: String(pkg.title ?? current.title),
+        description: String(pkg.description ?? current.description),
+        category: String(pkg.category ?? current.category),
+        condition: String(pkg.condition ?? current.condition),
+        sizeVariant: pkg.size_variant != null ? String(pkg.size_variant) : current.sizeVariant,
+        costBasis: pkg.cost_basis != null ? String(pkg.cost_basis) : current.costBasis,
+        targetPrice: pkg.target_price != null ? String(pkg.target_price) : current.targetPrice,
+        shippingProfile: pkg.shipping_profile != null ? String(pkg.shipping_profile) : current.shippingProfile,
+        productId: pkg.product_id != null ? String(pkg.product_id) : current.productId,
+      }));
+      setResult(handoff.result);
+      flash(`Continued from Sourcing: ${handoff.sourceLabel}. Draft below is already saved -- edit and re-save if needed.`);
+    } catch {
+      // Malformed/stale handoff payload -- ignore it rather than surface a
+      // confusing error; the operator can still use the page normally.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredChannels = useMemo(() => {
     const value = channelQuery.trim().toLowerCase();

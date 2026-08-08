@@ -293,6 +293,17 @@ export interface ListingPackageResponse {
   liabilityMode: "seller_publishes_on_own_accounts";
 }
 
+// Session-local handoff key used to carry a just-created ListingPackageResponse
+// from the Sourcing "List It" action into Listing Workspace, so BUY -> LIST
+// opens straight on the Draft Output the sourcing item already generated
+// instead of re-running the intake form. Cleared by the reader as soon as
+// it's consumed -- this is a one-shot handoff, not a persisted draft store.
+export const SOURCING_LISTING_HANDOFF_KEY = "primeopp:sourcing-listing-handoff";
+export interface SourcingListingHandoff {
+  result: ListingPackageResponse;
+  sourceLabel: string;
+}
+
 export interface AccountConnectionShell {
   id: string | number;
   owner_scope: string;
@@ -1066,6 +1077,6 @@ export async function batchUpdateSourcingItems(sessionId: number, itemIds: numbe
   return sourcingRequest(`/sessions/${sessionId}/items/batch`, { method: "POST", body: JSON.stringify({ itemIds, action }) });
 }
 
-export async function createListingFromSourcingItem(sessionId: number, itemId: number, selectedChannels?: string[]): Promise<{ canonicalListingPackageId: number }> {
+export async function createListingFromSourcingItem(sessionId: number, itemId: number, selectedChannels?: string[]): Promise<ListingPackageResponse> {
   return sourcingRequest(`/sessions/${sessionId}/items/${itemId}/create-listing`, { method: "POST", body: JSON.stringify({ selectedChannels }) });
 }

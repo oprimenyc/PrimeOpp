@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requirePermission } from "../lib/auth.js";
 import { createAuditLog } from "../lib/audit.js";
-import { query, transaction } from "../lib/db.js";
+import { query } from "../lib/db.js";
 import {
   applyIdentifierMapLookup,
   applyLocalCatalogLookup,
@@ -11,6 +11,7 @@ import {
   type ProductIdentifierMapMatch,
 } from "../lib/productIntake.js";
 import { generateListingWorkspace } from "../lib/listingWorkspace.js";
+import { persistGeneratedListingWorkspace } from "../lib/listingPackagePersistence.js";
 import {
   computeSourcingDecision,
   DEFAULT_SOURCING_FEE_SCHEDULE,
@@ -570,43 +571,38 @@ router.post("/sourcing/sessions/:id/items/:itemId/create-listing", requirePermis
       createExports: true,
     });
 
-    const result = await transaction(async (client) => {
-      const packageRows = await client.query(
-        `INSERT INTO canonical_listing_packages
-          (product_id, source_identifier, identifier_type, intake_source, title, description, images,
-           category, condition, size_variant, cost_basis, target_price, margin, shipping_profile, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-         RETURNING *`,
-        [
-          generated.canonical.product_id,
-          generated.canonical.source_identifier,
-          generated.canonical.identifier_type,
-          generated.canonical.intake_source,
-          generated.canonical.title,
-          generated.canonical.description,
-          JSON.stringify(generated.canonical.images),
-          generated.canonical.category,
-          generated.canonical.condition,
-          generated.canonical.size_variant,
-          generated.canonical.cost_basis,
-          generated.canonical.target_price,
-          generated.canonical.margin,
-          generated.canonical.shipping_profile,
-          generated.canonical.status,
-        ],
-      );
-      const packageId = packageRows.rows[0]?.id;
-
+    // Persist through the exact same path routes/listings.ts uses (canonical
+    // package + channel drafts + exports) so a BUY item that gets listed here
+    // hands off a real ListingPackageResponse the frontend can render with
+    // zero adaptation -- not a truncated, drafts-less stand-in.
+    const result = await persistGeneratedListingWorkspace(generated, async (client, packageId) => {
       await client.query(
         `UPDATE sourcing_session_items SET canonical_listing_package_id=$1, status='LISTED', updated_at=NOW() WHERE id=$2`,
         [packageId, itemId],
       );
-
-      return packageRows.rows[0];
     });
 
-    await createAuditLog({ req, action: "sourcing_item_create_listing", entityType: "sourcing_session_item", entityId: itemId, after: { canonicalListingPackageId: result.id } });
-    res.status(201).json({ canonicalListingPackageId: result.id, canonicalListingPackage: result, externalPublishEnabled: false });
+    await createAuditLog({
+      req,
+      action: "sourcing_item_create_listing",
+      entityType: "sourcing_session_item",
+      entityId: itemId,
+      after: {
+        canonicalListingPackageId: result.packageRow.id,
+        channel_count: result.channelDrafts.length,
+        export_count: result.exports.length,
+      },
+    });
+
+    res.status(201).json({
+      canonicalListingPackageId: result.packageRow.id,
+      canonicalListingPackage: result.packageRow,
+      channelDrafts: result.channelDrafts,
+      exports: result.exports,
+      externalPublishEnabled: generated.externalPublishEnabled,
+      approvalRequired: generated.approvalRequired,
+      liabilityMode: generated.liabilityMode,
+    });
   } catch (err) {
     console.error("POST /sourcing/sessions/:id/items/:itemId/create-listing error:", err);
     res.status(500).json({ error: "Failed to create listing from sourcing item" });

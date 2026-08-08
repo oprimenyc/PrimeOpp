@@ -177,7 +177,30 @@ describe("sourcing routes safety posture", () => {
         body: JSON.stringify({ itemIds: [1], action: "PASS" }),
       });
       expect(batch.status).toBe(401);
+
+      const createListing = await fetch(`${baseUrl}/api/sourcing/sessions/1/items/1/create-listing`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      expect(createListing.status).toBe(401);
     });
+  });
+
+  it("persists create-listing through the same shared path Listing Workspace uses, not a duplicated insert", () => {
+    // Regression guard: an earlier version of this route persisted only the
+    // canonical_listing_packages row and silently dropped channelDrafts/
+    // exports. Both routes/sourcing.ts and routes/listings.ts must go
+    // through lib/listingPackagePersistence.ts so a BUY item that gets
+    // listed from Sourcing produces the exact same ListingPackageResponse
+    // shape (channelDrafts + exports included) as the standalone Listing
+    // Workspace flow -- not a truncated stand-in.
+    const sourcingSource = readFileSync(path.join(repoRoot, "artifacts/api-server/src/routes/sourcing.ts"), "utf8");
+    const listingsSource = readFileSync(path.join(repoRoot, "artifacts/api-server/src/routes/listings.ts"), "utf8");
+    expect(sourcingSource).toMatch(/persistGeneratedListingWorkspace/);
+    expect(listingsSource).toMatch(/persistGeneratedListingWorkspace/);
+    expect(sourcingSource).toMatch(/channelDrafts:\s*result\.channelDrafts/);
+    expect(sourcingSource).toMatch(/exports:\s*result\.exports/);
   });
 
   it("rejects an invalid session create payload with a 400, not a silent pass", async () => {
