@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requirePermission } from "../lib/auth.js";
 import { CHANNELS, normalizeChannelKey } from "../lib/channels.js";
+import { getChannelAdapter } from "../lib/channelAdapters/index.js";
 import { createAuditLog } from "../lib/audit.js";
 import { query } from "../lib/db.js";
 import { channelConnectionSchema, validateBody, validateParams } from "../lib/validation.js";
@@ -8,11 +9,25 @@ import { idParamSchema } from "../lib/validation.js";
 
 const router = Router();
 
+// oauthEnabled/publishEnabled are overridden here from the live adapter
+// registry -- CHANNELS itself only holds static defaults. This is the one
+// place "is eBay publish actually ready right now" gets computed, so it's
+// never out of sync with what routes/listings.ts will actually allow.
 router.get("/channels", (_req, res) => {
+  const channels = CHANNELS.map((channel) => {
+    const adapter = getChannelAdapter(channel.key);
+    if (!adapter) return channel;
+    return {
+      ...channel,
+      oauthEnabled: adapter.capabilities.connect,
+      publishEnabled: adapter.capabilities.createListing && adapter.isConfigured(),
+    };
+  });
+
   res.json({
-    channels: CHANNELS,
+    channels,
     providerCalls: false,
-    publishEnabled: false,
+    publishEnabled: channels.some((c) => c.publishEnabled),
   });
 });
 

@@ -6,12 +6,25 @@ import { CHANNELS, normalizeChannelKey } from "../src/lib/channels.js";
 describe("OAuth-ready channel connection foundation", () => {
   const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..");
 
-  it("returns provider-neutral channels with publish disabled", () => {
+  it("returns provider-neutral channels with publish disabled by static default", () => {
     expect(CHANNELS.length).toBeGreaterThan(0);
     expect(CHANNELS.every((channel) => channel.draftsAvailable)).toBe(true);
     expect(CHANNELS.every((channel) => channel.exportsAvailable)).toBe(true);
-    expect(CHANNELS.every((channel) => channel.oauthEnabled === false)).toBe(true);
+    // publishEnabled is a static default for every channel -- routes/channels.ts
+    // overrides it live from the adapter registry, so this array itself never
+    // claims a channel is ready to publish.
     expect(CHANNELS.every((channel) => channel.publishEnabled === false)).toBe(true);
+  });
+
+  it("marks only channels with a real adapter as oauth-capable, everything else stays false", () => {
+    const withoutAdapter = CHANNELS.filter((c) => c.key !== "ebay");
+    expect(withoutAdapter.length).toBeGreaterThan(0);
+    expect(withoutAdapter.every((channel) => channel.oauthEnabled === false)).toBe(true);
+
+    const ebay = CHANNELS.find((c) => c.key === "ebay");
+    expect(ebay).toBeDefined();
+    expect(ebay?.oauthEnabled).toBe(true); // real adapter exists in this codebase
+    expect(ebay?.publishEnabled).toBe(false); // static default -- live value comes from GET /channels
   });
 
   it("normalizes configurable channel keys", () => {

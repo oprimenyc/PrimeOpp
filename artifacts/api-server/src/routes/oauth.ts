@@ -293,4 +293,60 @@ router.post("/oauth/connections/:id/disconnect", requirePermission("products:wri
   }
 });
 
+// Explicit APPROVE step: a connected (tokens exchanged) account is still
+// publish_authorized=FALSE until an operator deliberately flips it here.
+// This never calls the provider -- it's a local trust decision, gated behind
+// settings:write (owner/super_admin only) rather than the products:write an
+// operator uses for day-to-day listing work, because it's what turns on the
+// ability to create REAL external listings.
+router.post("/oauth/connections/:id/authorize-publish", requirePermission("settings:write"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "invalid_id" });
+    return;
+  }
+  try {
+    const rows = await query<{ id: number; connection_status: string }>(
+      `SELECT id, connection_status FROM channel_account_connections WHERE id=$1`,
+      [id],
+    );
+    const connection = rows[0];
+    if (!connection) {
+      res.status(404).json({ error: "connection_not_found" });
+      return;
+    }
+    if (connection.connection_status !== "CONNECTED_MONITORING_ONLY" && connection.connection_status !== "CONNECTED_DRAFTS_ONLY") {
+      res.status(409).json({ error: "not_connected", connectionStatus: connection.connection_status, reason: "Only a connected account (real tokens exchanged) can be authorized to publish." });
+      return;
+    }
+
+    await query(`UPDATE channel_account_connections SET publish_authorized=TRUE, updated_at=NOW() WHERE id=$1`, [id]);
+    await createAuditLog({ req, action: "oauth_authorize_publish", entityType: "channel_account_connection", entityId: id, after: { publish_authorized: true } });
+
+    res.json({ connectionId: id, publishAuthorized: true });
+  } catch (err) {
+    console.error("POST /oauth/connections/:id/authorize-publish error:", err);
+    res.status(500).json({ error: "authorize_failed" });
+  }
+});
+
+// Revoke publish authorization without disconnecting the account entirely
+// (disconnect below also clears tokens; this just turns publishing back off
+// while keeping the account connected for monitoring/drafts).
+router.post("/oauth/connections/:id/revoke-publish", requirePermission("settings:write"), async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "invalid_id" });
+    return;
+  }
+  try {
+    await query(`UPDATE channel_account_connections SET publish_authorized=FALSE, updated_at=NOW() WHERE id=$1`, [id]);
+    await createAuditLog({ req, action: "oauth_revoke_publish", entityType: "channel_account_connection", entityId: id, after: { publish_authorized: false } });
+    res.json({ connectionId: id, publishAuthorized: false });
+  } catch (err) {
+    console.error("POST /oauth/connections/:id/revoke-publish error:", err);
+    res.status(500).json({ error: "revoke_failed" });
+  }
+});
+
 export default router;
