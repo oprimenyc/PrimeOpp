@@ -59,3 +59,6 @@ node_modules/
 
 # PrimeOpp commerce-core CLI persisted data (operator-local, not source)
 **/.primeopp-data/
+
+# Superseded local drafts from prior Cowork handoff reconciliation — not source
+/_cowork_superseded_local_drafts_backup/

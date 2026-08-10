@@ -1,0 +1,46 @@
+[
+  {
+    "id": "product_pod_hoodie_001",
+    "kind": "POD",
+    "title": "PrimeOpp Signature Hoodie",
+    "description": "Heavyweight print-on-demand hoodie.",
+    "category": { "path": ["Apparel", "Hoodies"], "leaf": "Hoodies" },
+    "images": [
+      { "url": "https://example.com/images/hoodie-primary.jpg", "kind": "PRIMARY" },
+      { "url": "https://example.com/images/hoodie-back.jpg", "kind": "GALLERY" }
+    ],
+    "variants": [
+      { "attributes": [{ "axis": "COLOR", "value": "Black" }, { "axis": "APPAREL_SIZE", "value": "M" }] },
+      { "attributes": [{ "axis": "COLOR", "value": "Black" }, { "axis": "APPAREL_SIZE", "value": "L" }] },
+      { "attributes": [{ "axis": "COLOR", "value": "Red" }, { "axis": "APPAREL_SIZE", "value": "M" }] }
+    ],
+    "source": { "kind": "AI_ENRICHMENT", "ref": "enrichment_001" }
+  },
+  {
+    "id": "product_affiliate_watch_002",
+    "kind": "AFFILIATE",
+    "title": "Chrono Series Watch",
+    "category": { "path": ["Accessories", "Watches"], "leaf": "Watches" },
+    "images": [
+      { "url": "https://example.com/images/watch.jpg", "kind": "PRIMARY" }
+    ],
+    "variants": [],
+    "source": { "kind": "CATALOG", "ref": "https://partner-shop.example.com/products/chrono-series" }
+  },
+  {
+    "id": "product_physical_unsupported_003",
+    "kind": "PHYSICAL",
+    "title": "Standalone Physical Item (no live equivalent)",
+    "images": [],
+    "variants": [],
+    "source": { "kind": "MANUAL", "ref": "manual_entry" }
+  },
+  {
+    "id": "product_missing_title_004",
+    "kind": "POD",
+    "title": "",
+    "images": [],
+    "variants": [],
+    "source": { "kind": "MANUAL", "ref": "manual_entry" }
+  }
+]

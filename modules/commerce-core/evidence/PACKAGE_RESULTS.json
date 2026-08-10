@@ -95,6 +95,12 @@
     "hasTsconfig": true,
     "hasPackageJson": true
   },
+  "pipeline": {
+    "hasIndex": true,
+    "hasTests": true,
+    "hasTsconfig": true,
+    "hasPackageJson": true
+  },
   "pricing": {
     "hasIndex": true,
     "hasTests": true,
